@@ -34,8 +34,17 @@ public:
     ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t rclk, uint16_t oe);
     void begin();
 
-    void shiftOutByte(uint8_t byte);
-    void shiftOutAscii(char ascii);
+    void shiftOutByte(uint8_t byte, bool dp);
+    void shiftOutByte(uint8_t byte)
+    {
+        shiftOutByte(byte, false);
+    }
+
+    void shiftOutAscii(char ascii, bool dp);
+    void shiftOutAscii(char ascii)
+    {
+        shiftOutAscii(ascii, false);
+    }
 
     void enable();
     void disable();

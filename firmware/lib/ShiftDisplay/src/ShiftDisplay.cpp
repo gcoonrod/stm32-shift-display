@@ -11,6 +11,11 @@
 #include <Arduino.h>
 #include "./ShiftDisplay.h"
 
+#define DP_BP 2
+#define DP_BM 0b00000010
+#define SET_DP(reg) ((reg) |= (1U << 1))
+#define UNSET_DP(reg) ((reg) &= ~(1U << 1))
+
 /**
  * Bit Position:  7   6   5   5   3   2   1   0
  * 595 Outputs:   QA  QB  QC  QD  QE  QF  QG  QH
@@ -83,8 +88,12 @@ uint8_t ShiftDisplay::map_ascii(char hex_char)
     return segment_data[index];
 }
 
-void ShiftDisplay::shiftOutByte(uint8_t byte)
+void ShiftDisplay::shiftOutByte(uint8_t byte, bool dp)
 {
+    if (dp)
+    {
+        SET_DP(byte);
+    }
     for (uint8_t i = 0; i < 8; i++)
     {
         // Set serial data bit
@@ -110,9 +119,9 @@ void ShiftDisplay::shiftOutByte(uint8_t byte)
     }
 }
 
-void ShiftDisplay::shiftOutAscii(char ascii)
+void ShiftDisplay::shiftOutAscii(char ascii, bool dp)
 {
-    shiftOutByte(map_ascii(ascii));
+    shiftOutByte(map_ascii(ascii), dp);
 }
 
 void ShiftDisplay::enable()
@@ -154,9 +163,9 @@ void ShiftDisplay::clear()
 
 inline size_t ShiftDisplay::write(uint8_t value)
 {
-    if((char)value == '\r' || (char)value == '\n')
+    if ((char)value == '\r' || (char)value == '\n')
     {
-        //clear();
+        // clear();
         return 1;
     }
 
