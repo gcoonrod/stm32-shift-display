@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ShiftDisplay.h>
+#include <ShiftClock.h>
 
 #define SER PB3
 #define SRCLK PB4
@@ -25,12 +26,17 @@ int idx = 0;
 const size_t message_len = sizeof(message) / sizeof(message[0]);
 
 ShiftDisplay display(SER, SRCLK, SRCLRB, RCLK, OEB);
+ShiftClock shiftClock(0, 0, 0);
 
 // Function definitions
 void setup_user_leds();
 void setup_user_btns();
 void setup_rtc();
 void setup_usb();
+
+void printClock();
+
+
 
 void setup()
 {
@@ -39,22 +45,16 @@ void setup()
   display.begin();
   display.enable();
 
-  // Print fake time 1635.24
-  display.shiftOutAscii('4');
-  display.shiftOutAscii('2');
-  display.shiftOutAscii('5', true);
-  display.shiftOutAscii('3');
-  display.shiftOutAscii('6');
-  display.shiftOutAscii('1');
+  shiftClock.setHours(23);
+  shiftClock.setMinutes(59);
+  shiftClock.setSeconds(55);
 }
 
 void loop()
 {
-  // for (int i = message_len - 1; i >= 0; i--)
-  // {
-  //   display.shiftOutAscii(message[i]);
-  //   delay(500);
-  // }
+  printClock();
+  delay(950);
+  shiftClock.tick();
 }
 
 void setup_user_leds()
@@ -83,4 +83,16 @@ void setup_rtc()
 void setup_usb()
 {
   // TODO: Configure USB as virtual com, HID, or DFU depending on boot mode
+}
+
+void printClock()
+{
+  display.shiftOutAscii((shiftClock.getSeconds() % 10) + '0');
+  display.shiftOutAscii((shiftClock.getSeconds() / 10) + '0');
+
+  display.shiftOutAscii((shiftClock.getMinutes() % 10) + '0', true);
+  display.shiftOutAscii((shiftClock.getMinutes() / 10) + '0');
+
+  display.shiftOutAscii((shiftClock.getHours() % 10) + '0');
+  display.shiftOutAscii((shiftClock.getHours() / 10) + '0');
 }
