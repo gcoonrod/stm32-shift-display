@@ -103,15 +103,13 @@ void ShiftDisplay::shiftOutByte(uint8_t byte, bool dp)
             delayMicroseconds(_delay_us);
         }
 
-        // Pulse the serial and latch (srclk & rclk) together
+        // Pulse the serial clock
         digitalWrite(_serial_clk_pin, HIGH);
-        digitalWrite(_latch_clk_pin, HIGH);
         if (_delay_us > 0)
         {
             delayMicroseconds(_delay_us);
         }
         digitalWrite(_serial_clk_pin, LOW);
-        digitalWrite(_latch_clk_pin, LOW);
         if (_delay_us > 0)
         {
             delayMicroseconds(_delay_us);
@@ -149,6 +147,21 @@ void ShiftDisplay::clear()
     }
 
     // Latch the cleared register
+    digitalWrite(_latch_clk_pin, LOW);
+    if (_delay_us)
+    {
+        delayMicroseconds(_delay_us);
+    }
+    digitalWrite(_latch_clk_pin, HIGH);
+    if (_delay_us)
+    {
+        delayMicroseconds(_delay_us);
+    }
+}
+
+void ShiftDisplay::latch()
+{
+    // Latch the shift register
     digitalWrite(_latch_clk_pin, LOW);
     if (_delay_us)
     {

@@ -50,6 +50,7 @@ public:
     void disable();
 
     void clear();
+    void latch();
 
     virtual size_t write(uint8_t);
     virtual size_t write(const uint8_t *buffer, size_t size);

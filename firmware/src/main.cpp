@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <ShiftDisplay.h>
-#include <ShiftClock.h>
+#include <STM32RTC.h>
 
 #define SER PB3
 #define SRCLK PB4
@@ -21,40 +21,55 @@
  * 7 Segment LED: D   E   G   F   A   B   DP  C
  */
 
-const char message[] = {' ', 'D', 'E', 'A', 'D', ' ', 'B', 'E', 'E', 'F'};
-int idx = 0;
-const size_t message_len = sizeof(message) / sizeof(message[0]);
-
 ShiftDisplay display(SER, SRCLK, SRCLRB, RCLK, OEB);
-ShiftClock shiftClock(0, 0, 0);
+STM32RTC& rtc = STM32RTC::getInstance();
+
+uint8_t weekDay;
+uint8_t day;
+uint8_t month;
+uint8_t year;
 
 // Function definitions
 void setup_user_leds();
 void setup_user_btns();
 void setup_rtc();
 void setup_usb();
-
 void printClock();
-
-
 
 void setup()
 {
-  Serial.begin(115200);
+
+  rtc.setClockSource(STM32RTC::LSE_CLOCK);
+  delay(500);
+  rtc.begin(false, STM32RTC::HOUR_24);
+
+  // get date from rtc backup
+  rtc.getDate(&weekDay, &day, &month, &year);
+
+  // if it is the epoch we need to reset, otherwise carry on.
+  if ((day == 1) && (month == RTC_MONTH_JANUARY) && (year == 1)) {
+    // Unix Epoch
+    rtc.setHours(0);
+    rtc.setMinutes(0);
+    rtc.setSeconds(0);
+    rtc.setSubSeconds(0);
+
+    rtc.setWeekDay(RTC_WEEKDAY_SATURDAY);
+    rtc.setDay(1);
+    rtc.setMonth(6);
+    rtc.setYear(24);
+  } 
 
   display.begin();
   display.enable();
-
-  shiftClock.setHours(23);
-  shiftClock.setMinutes(59);
-  shiftClock.setSeconds(55);
 }
 
 void loop()
 {
+  display.clear();
   printClock();
-  delay(950);
-  shiftClock.tick();
+  display.latch();
+  delay(1000);
 }
 
 void setup_user_leds()
@@ -87,12 +102,16 @@ void setup_usb()
 
 void printClock()
 {
-  display.shiftOutAscii((shiftClock.getSeconds() % 10) + '0');
-  display.shiftOutAscii((shiftClock.getSeconds() / 10) + '0');
+  uint8_t seconds = rtc.getSeconds();
+  uint8_t minutes = rtc.getMinutes();
+  uint8_t hours = rtc.getHours();
 
-  display.shiftOutAscii((shiftClock.getMinutes() % 10) + '0', true);
-  display.shiftOutAscii((shiftClock.getMinutes() / 10) + '0');
+  display.shiftOutAscii((seconds % 10) + '0');
+  display.shiftOutAscii((seconds / 10) + '0');
 
-  display.shiftOutAscii((shiftClock.getHours() % 10) + '0');
-  display.shiftOutAscii((shiftClock.getHours() / 10) + '0');
+  display.shiftOutAscii((minutes % 10) + '0', true);
+  display.shiftOutAscii((minutes / 10) + '0');
+
+  display.shiftOutAscii((hours % 10) + '0');
+  display.shiftOutAscii((hours / 10) + '0');
 }
