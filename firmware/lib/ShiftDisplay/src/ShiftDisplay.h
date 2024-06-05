@@ -32,7 +32,11 @@ protected:
 
 public:
     ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t rclk, uint16_t oe);
-    void begin();
+    void begin(uint32_t delay_us);
+    void begin()
+    {
+        begin(0U);
+    }
 
     void shiftOutByte(uint8_t byte, bool dp);
     void shiftOutByte(uint8_t byte)

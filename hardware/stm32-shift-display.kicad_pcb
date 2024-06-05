@@ -4051,7 +4051,7 @@
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C6"
-			(at -2.032 0 360)
+			(at -2.032 0 0)
 			(layer "F.SilkS")
 			(uuid "1fc935aa-ddfc-4005-ab10-7197e3e6dd5c")
 			(effects
@@ -4062,7 +4062,7 @@
 			)
 		)
 		(property "Value" "100n"
-			(at 0 1.16 360)
+			(at 0 1.16 0)
 			(layer "F.Fab")
 			(uuid "53287b5b-5869-46a2-a93e-460fba633ffc")
 			(effects
@@ -4253,7 +4253,7 @@
 			(uuid "62e0f0dc-57a7-45ac-867c-75ce9bc00533")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "ec13ef23-8026-4083-950e-22205d3e74aa")
 			(effects
@@ -8170,7 +8170,6 @@
 			)
 			(fill none)
 			(layer "F.CrtYd")
-			(net 2)
 			(uuid "934675fa-c9c1-4d96-892c-d49c1aebcb12")
 		)
 		(fp_text user "${REFERENCE}"
@@ -13653,7 +13652,7 @@
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C2"
-			(at -2.004 0 270)
+			(at -2.004 0 -90)
 			(layer "F.SilkS")
 			(uuid "bc440dfd-840f-44ec-8ddf-9f8cee999347")
 			(effects
@@ -13664,7 +13663,7 @@
 			)
 		)
 		(property "Value" "100n"
-			(at 0 1.16 270)
+			(at 0 1.16 -90)
 			(layer "F.Fab")
 			(uuid "f1c83f0e-f311-4cf5-85fa-9ae264beb7dc")
 			(effects
@@ -13855,7 +13854,7 @@
 			(uuid "fb9de5fa-9e77-4e3b-b8da-561baf75ee32")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 270)
+			(at 0 0 -90)
 			(layer "F.Fab")
 			(uuid "b3144bf0-8978-434f-be79-84469f04e2b9")
 			(effects
@@ -14126,7 +14125,7 @@
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R1"
-			(at 2.032 0 360)
+			(at 2.032 0 0)
 			(layer "F.SilkS")
 			(uuid "47e33b88-0695-4e85-b1d7-77163bc44689")
 			(effects
@@ -14137,7 +14136,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 0 1.17 360)
+			(at 0 1.17 0)
 			(layer "F.Fab")
 			(uuid "9bdc1d26-a169-4ec7-b6ca-ecc8ff694b71")
 			(effects
@@ -14302,7 +14301,7 @@
 			(uuid "1c49db53-eb03-4469-8047-9dc304419889")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "6b834c4e-eca3-4c36-a4c4-f7dd190e8d17")
 			(effects
@@ -19397,7 +19396,7 @@
 		(uuid "a4d342f6-fbf9-4cde-9b8c-403b8e3d3bb3")
 		(at 121.666 91.44 90)
 		(property "Reference" "G***"
-			(at 0 0 270)
+			(at 0 0 -90)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "c7c2957a-ec9e-4b73-be7d-ed7659c6f0fc")
@@ -19409,7 +19408,7 @@
 			)
 		)
 		(property "Value" "LOGO"
-			(at 0.75 0 270)
+			(at 0.75 0 -90)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "3d791885-0de8-47f0-94ca-1584161a0367")
@@ -23247,7 +23246,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 0 1.17 270)
+			(at 0 1.17 -90)
 			(layer "F.Fab")
 			(uuid "b6e1ff8f-bb9a-4c2b-b36e-73f4f6dcd36f")
 			(effects
@@ -23412,7 +23411,7 @@
 			(uuid "4169d48f-ffe6-413d-938c-b809c6410fca")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 270)
+			(at 0 0 -90)
 			(layer "F.Fab")
 			(uuid "8e71f50e-0915-4db4-9c86-5f28d04d066e")
 			(effects
@@ -24408,7 +24407,7 @@
 		(descr "Generic 6mm SW tactile push button")
 		(tags "tact sw push 6mm")
 		(property "Reference" "SW4"
-			(at 3.25 2.087 270)
+			(at 3.25 2.087 -90)
 			(layer "F.SilkS")
 			(uuid "4046e9bb-5358-420c-9abb-bbf5e926d650")
 			(effects
@@ -24419,7 +24418,7 @@
 			)
 		)
 		(property "Value" "SW_PUSH"
-			(at 3.75 6.7 270)
+			(at 3.75 6.7 -90)
 			(layer "F.Fab")
 			(uuid "5b87fd99-0b37-425c-95b8-34d0c0b0c476")
 			(effects
@@ -24717,7 +24716,7 @@
 			(uuid "b7879b56-d6f6-4efd-af22-6ba60df3084f")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 3.25 2.25 270)
+			(at 3.25 2.25 -90)
 			(layer "F.Fab")
 			(uuid "ce193b90-c0ca-4800-bc19-7372e05bfe98")
 			(effects

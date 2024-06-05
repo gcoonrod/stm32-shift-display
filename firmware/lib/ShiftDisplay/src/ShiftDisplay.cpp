@@ -11,33 +11,31 @@
 #include <Arduino.h>
 #include "./ShiftDisplay.h"
 
-#define DP_BP 2
-#define DP_BM 0b00000010
-#define SET_DP(reg) ((reg) |= (1U << 1))
-#define UNSET_DP(reg) ((reg) &= ~(1U << 1))
+#define DP_BP 7
+#define DP_BM 0b01000000
 
 /**
  * Bit Position:  7   6   5   5   3   2   1   0
  * 595 Outputs:   QA  QB  QC  QD  QE  QF  QG  QH
- * 7 Segment LED: D   E   G   F   A   B   DP  C
+ * 7 Segment LED: B   DP  C   A   F   D   G   E
  */
 static const uint8_t segment_data[] = {
-    0b11011101, // '0'
-    0b00000101, // '1'
-    0b11101100, // '2'
-    0b10101101, // '3'
-    0b00110101, // '4'
-    0b10111001, // '5'
-    0b11111001, // '6'
-    0b00001101, // '7'
-    0b11111101, // '8'
-    0b10111101, // '9'
-    0b01111101, // 'A'
-    0b11110001, // 'b'
-    0b11011000, // 'C'
-    0b11100101, // 'd'
-    0b11111000, // 'E'
-    0b01111000  // 'F'
+    0b10111101, // '0'
+    0b10100000, // '1'
+    0b10010111, // '2'
+    0b10110110, // '3'
+    0b10101010, // '4'
+    0b00111110, // '5'
+    0b00111111, // '6'
+    0b10110000, // '7'
+    0b10111111, // '8'
+    0b10111110, // '9'
+    0b10111011, // 'A'
+    0b00101111, // 'B' (b)
+    0b00011101, // 'C'
+    0b10100111, // 'D' (d)
+    0b00011111, // 'E'
+    0b00011011  // 'F'
 };
 
 ShiftDisplay::ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t rclk, uint16_t oe)
@@ -52,7 +50,7 @@ ShiftDisplay::ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t
     _delay_ms = 0;
 }
 
-void ShiftDisplay::begin()
+void ShiftDisplay::begin(uint32_t delay_us)
 {
     pinMode(_serial_data_pin, OUTPUT);
     pinMode(_serial_clk_pin, OUTPUT);
@@ -65,6 +63,8 @@ void ShiftDisplay::begin()
     digitalWrite(_serial_clr_pin, HIGH);
     digitalWrite(_latch_clk_pin, LOW);
     digitalWrite(_output_en_pin, HIGH);
+
+    _delay_us = delay_us;
 
     _initialized = true;
 }
@@ -92,7 +92,7 @@ void ShiftDisplay::shiftOutByte(uint8_t byte, bool dp)
 {
     if (dp)
     {
-        SET_DP(byte);
+        SET_BIT(byte, DP_BM);
     }
     for (uint8_t i = 0; i < 8; i++)
     {
