@@ -738,30 +738,33 @@
 				)
 			)
 		)
-		(symbol "Device:R_Pack04"
+		(symbol "Device:R_Small"
+			(pin_numbers hide)
 			(pin_names
-				(offset 0) hide)
+				(offset 0.254) hide)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
-			(property "Reference" "RN"
-				(at -7.62 0 90)
+			(property "Reference" "R"
+				(at 0.762 0.508 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
-			(property "Value" "R_Pack04"
-				(at 5.08 0 90)
+			(property "Value" "R_Small"
+				(at 0.762 -1.016 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
 			(property "Footprint" ""
-				(at 6.985 0 90)
+				(at 0 0 0)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -778,7 +781,7 @@
 					(hide yes)
 				)
 			)
-			(property "Description" "4 resistor network, parallel topology"
+			(property "Description" "Resistor, small symbol"
 				(at 0 0 0)
 				(effects
 					(font
@@ -787,7 +790,7 @@
 					(hide yes)
 				)
 			)
-			(property "ki_keywords" "R network parallel topology isolated"
+			(property "ki_keywords" "R resistor"
 				(at 0 0 0)
 				(effects
 					(font
@@ -796,7 +799,7 @@
 					(hide yes)
 				)
 			)
-			(property "ki_fp_filters" "DIP* SOIC* R*Array*Concave* R*Array*Convex* MSOP*"
+			(property "ki_fp_filters" "R_*"
 				(at 0 0 0)
 				(effects
 					(font
@@ -805,152 +808,12 @@
 					(hide yes)
 				)
 			)
-			(symbol "R_Pack04_0_1"
+			(symbol "R_Small_0_1"
 				(rectangle
-					(start -6.35 -2.413)
-					(end 3.81 2.413)
+					(start -0.762 1.778)
+					(end 0.762 -1.778)
 					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(rectangle
-					(start -5.715 1.905)
-					(end -4.445 -1.905)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start -3.175 1.905)
-					(end -1.905 -1.905)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start -0.635 1.905)
-					(end 0.635 -1.905)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -5.08 -2.54) (xy -5.08 -1.905)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -5.08 1.905) (xy -5.08 2.54)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -2.54 -2.54) (xy -2.54 -1.905)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -2.54 1.905) (xy -2.54 2.54)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 -2.54) (xy 0 -1.905)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 1.905) (xy 0 2.54)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 2.54 -2.54) (xy 2.54 -1.905)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 2.54 1.905) (xy 2.54 2.54)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 1.905 1.905)
-					(end 3.175 -1.905)
-					(stroke
-						(width 0.254)
+						(width 0.2032)
 						(type default)
 					)
 					(fill
@@ -958,11 +821,11 @@
 					)
 				)
 			)
-			(symbol "R_Pack04_1_1"
+			(symbol "R_Small_1_1"
 				(pin passive line
-					(at -5.08 -5.08 90)
-					(length 2.54)
-					(name "R1.1"
+					(at 0 2.54 270)
+					(length 0.762)
+					(name "~"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -978,9 +841,9 @@
 					)
 				)
 				(pin passive line
-					(at -2.54 -5.08 90)
-					(length 2.54)
-					(name "R2.1"
+					(at 0 -2.54 90)
+					(length 0.762)
+					(name "~"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -988,114 +851,6 @@
 						)
 					)
 					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 0 -5.08 90)
-					(length 2.54)
-					(name "R3.1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 2.54 -5.08 90)
-					(length 2.54)
-					(name "R4.1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 2.54 5.08 270)
-					(length 2.54)
-					(name "R4.2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "5"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 0 5.08 270)
-					(length 2.54)
-					(name "R3.2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "6"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -2.54 5.08 270)
-					(length 2.54)
-					(name "R2.2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "7"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 5.08 270)
-					(length 2.54)
-					(name "R1.2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "8"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1976,16 +1731,6 @@
 	)
 	(wire
 		(pts
-			(xy 205.74 149.86) (xy 212.09 149.86)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0094bf73-dca5-4094-bb88-6e133ed6ad5e")
-	)
-	(wire
-		(pts
 			(xy 158.75 90.17) (xy 149.86 90.17)
 		)
 		(stroke
@@ -1996,16 +1741,6 @@
 	)
 	(wire
 		(pts
-			(xy 87.63 139.7) (xy 104.14 139.7)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "010e41b8-1ee0-443b-89ce-842fc019690e")
-	)
-	(wire
-		(pts
 			(xy 58.42 78.74) (xy 60.96 78.74)
 		)
 		(stroke
@@ -2013,16 +1748,6 @@
 			(type default)
 		)
 		(uuid "015d1eef-5057-4f7d-a575-c28daa66cc20")
-	)
-	(wire
-		(pts
-			(xy 87.63 85.09) (xy 104.14 85.09)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "04170f26-0be5-4a27-9ab1-8a9171daee2c")
 	)
 	(wire
 		(pts
@@ -2126,6 +1851,16 @@
 	)
 	(wire
 		(pts
+			(xy 200.66 149.86) (xy 212.09 149.86)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0ad5991d-c79d-4499-af21-79f793efe256")
+	)
+	(wire
+		(pts
 			(xy 158.75 152.4) (xy 153.67 152.4)
 		)
 		(stroke
@@ -2136,23 +1871,23 @@
 	)
 	(wire
 		(pts
-			(xy 195.58 139.7) (xy 212.09 139.7)
+			(xy 82.55 144.78) (xy 104.14 144.78)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "0ce164e7-3480-4782-b0be-c1b8831578cf")
+		(uuid "0c1c90f8-02bd-487c-818b-466188a35fbc")
 	)
 	(wire
 		(pts
-			(xy 97.79 95.25) (xy 104.14 95.25)
+			(xy 92.71 41.91) (xy 104.14 41.91)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "0d4ba976-2703-4ead-9e14-42f96e7c284b")
+		(uuid "0daaf513-bc37-4222-b34c-b589036ff65b")
 	)
 	(wire
 		(pts
@@ -2176,6 +1911,16 @@
 	)
 	(wire
 		(pts
+			(xy 82.55 92.71) (xy 104.14 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0f775f3b-d585-45ce-b40e-cf56902f993e")
+	)
+	(wire
+		(pts
 			(xy 119.38 46.99) (xy 120.65 46.99)
 		)
 		(stroke
@@ -2183,6 +1928,16 @@
 			(type default)
 		)
 		(uuid "0fa902ec-f0ac-40e8-b71b-957a3e28e9a2")
+	)
+	(wire
+		(pts
+			(xy 200.66 97.79) (xy 212.09 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "10592097-7aa9-4c81-b2a8-bf66c008a898")
 	)
 	(wire
 		(pts
@@ -2203,16 +1958,6 @@
 			(type default)
 		)
 		(uuid "119d2f16-1d62-4157-800c-8a99a90c7011")
-	)
-	(wire
-		(pts
-			(xy 87.63 39.37) (xy 104.14 39.37)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "12fb9c3d-d0fc-442c-b6d1-649fbba1247d")
 	)
 	(wire
 		(pts
@@ -2246,13 +1991,23 @@
 	)
 	(wire
 		(pts
-			(xy 205.74 49.53) (xy 212.09 49.53)
+			(xy 92.71 97.79) (xy 104.14 97.79)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "191ee322-c119-49e9-a609-6a1027c33063")
+		(uuid "183e33c3-f1a6-4327-8bd4-d9dffb983743")
+	)
+	(wire
+		(pts
+			(xy 190.5 137.16) (xy 212.09 137.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "196adbff-a7a6-4766-bbbb-dcb7f4c8d52e")
 	)
 	(wire
 		(pts
@@ -2266,16 +2021,6 @@
 	)
 	(wire
 		(pts
-			(xy 87.63 92.71) (xy 104.14 92.71)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1d60974f-ed1b-427a-b834-699ce266310f")
-	)
-	(wire
-		(pts
 			(xy 149.86 36.83) (xy 149.86 63.5)
 		)
 		(stroke
@@ -2283,6 +2028,26 @@
 			(type default)
 		)
 		(uuid "1d72211a-843f-4b48-9879-32da2e35ce0c")
+	)
+	(wire
+		(pts
+			(xy 200.66 147.32) (xy 212.09 147.32)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1fdf2789-6d8a-4307-9e50-5071530580d6")
+	)
+	(wire
+		(pts
+			(xy 92.71 44.45) (xy 104.14 44.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "21a54d67-ee3d-4926-9fc1-22c04d6e22d2")
 	)
 	(wire
 		(pts
@@ -2296,13 +2061,13 @@
 	)
 	(wire
 		(pts
-			(xy 195.58 87.63) (xy 212.09 87.63)
+			(xy 82.55 137.16) (xy 104.14 137.16)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "2484fe71-e5b2-4e1f-ba43-5d1b47d0dedd")
+		(uuid "22a73c7f-e01e-41e9-83fe-66e974e7607f")
 	)
 	(wire
 		(pts
@@ -2323,16 +2088,6 @@
 			(type default)
 		)
 		(uuid "25400a35-be0d-46b4-83fc-30b97376c27d")
-	)
-	(wire
-		(pts
-			(xy 97.79 147.32) (xy 104.14 147.32)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2585d382-28c5-4f0f-ad78-347caa25904d")
 	)
 	(wire
 		(pts
@@ -2376,13 +2131,13 @@
 	)
 	(wire
 		(pts
-			(xy 205.74 97.79) (xy 212.09 97.79)
+			(xy 82.55 139.7) (xy 104.14 139.7)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "28102a9b-28c5-468a-9ead-438bf78fd70a")
+		(uuid "28554d76-7c11-4a60-bcfa-fea61c222d42")
 	)
 	(wire
 		(pts
@@ -2416,6 +2171,26 @@
 	)
 	(wire
 		(pts
+			(xy 190.5 85.09) (xy 212.09 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2a4d782c-438e-44c7-af4e-a065b6614ae8")
+	)
+	(wire
+		(pts
+			(xy 92.71 152.4) (xy 104.14 152.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2a5a3d98-5915-4249-8b05-82dba96534c1")
+	)
+	(wire
+		(pts
 			(xy 71.12 137.16) (xy 77.47 137.16)
 		)
 		(stroke
@@ -2433,16 +2208,6 @@
 			(type default)
 		)
 		(uuid "2ccae2b8-f3fb-46db-aac1-e0c0b253a54a")
-	)
-	(wire
-		(pts
-			(xy 87.63 36.83) (xy 104.14 36.83)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2e5a5245-2059-414f-ae95-f515bf146ea2")
 	)
 	(wire
 		(pts
@@ -2486,16 +2251,6 @@
 	)
 	(wire
 		(pts
-			(xy 87.63 90.17) (xy 104.14 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "33145374-1f9b-4518-8bf0-c237922a00bc")
-	)
-	(wire
-		(pts
 			(xy 71.12 46.99) (xy 87.63 46.99)
 		)
 		(stroke
@@ -2516,16 +2271,6 @@
 	)
 	(wire
 		(pts
-			(xy 87.63 142.24) (xy 104.14 142.24)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "350fae26-b09f-4dd6-89b3-067c51b6571e")
-	)
-	(wire
-		(pts
 			(xy 39.37 67.31) (xy 39.37 86.36)
 		)
 		(stroke
@@ -2543,6 +2288,16 @@
 			(type default)
 		)
 		(uuid "35e3f8df-2e84-45ac-8870-2b5d4df6fa06")
+	)
+	(wire
+		(pts
+			(xy 92.71 49.53) (xy 104.14 49.53)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3673087d-4e19-4cc8-9f93-2fd197be1276")
 	)
 	(wire
 		(pts
@@ -2586,16 +2341,6 @@
 	)
 	(wire
 		(pts
-			(xy 195.58 31.75) (xy 212.09 31.75)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "37e2a08f-f0a9-4b36-93bc-a386f07d3564")
-	)
-	(wire
-		(pts
 			(xy 39.37 86.36) (xy 39.37 100.33)
 		)
 		(stroke
@@ -2616,13 +2361,13 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 46.99) (xy 104.14 46.99)
+			(xy 200.66 152.4) (xy 212.09 152.4)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "3c44ad60-e7ce-4afa-80eb-093776e637a7")
+		(uuid "3b1887d6-b695-4c26-aaa1-8dbf32632208")
 	)
 	(wire
 		(pts
@@ -2656,13 +2401,13 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 97.79) (xy 104.14 97.79)
+			(xy 190.5 142.24) (xy 212.09 142.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "3efab6be-0c67-4f53-97bb-200781dceeb0")
+		(uuid "3e02cbe6-625d-456f-b3cf-dcdcbf6c987e")
 	)
 	(wire
 		(pts
@@ -2676,16 +2421,6 @@
 	)
 	(wire
 		(pts
-			(xy 205.74 102.87) (xy 212.09 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "405ad83f-e419-412d-bb11-96868faf6413")
-	)
-	(wire
-		(pts
 			(xy 71.12 142.24) (xy 77.47 142.24)
 		)
 		(stroke
@@ -2693,16 +2428,6 @@
 			(type default)
 		)
 		(uuid "418acefd-894e-4513-9e60-34cfa5014312")
-	)
-	(wire
-		(pts
-			(xy 87.63 31.75) (xy 104.14 31.75)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "41a04c7e-0868-4183-bc19-9f3c1fe96551")
 	)
 	(wire
 		(pts
@@ -2746,26 +2471,6 @@
 	)
 	(wire
 		(pts
-			(xy 205.74 152.4) (xy 212.09 152.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "466fe8fc-0920-4593-8ce9-84740c1f75fa")
-	)
-	(wire
-		(pts
-			(xy 87.63 137.16) (xy 104.14 137.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "46da6d09-84a2-41ec-82b7-56416ff5736b")
-	)
-	(wire
-		(pts
 			(xy 71.12 36.83) (xy 77.47 36.83)
 		)
 		(stroke
@@ -2783,16 +2488,6 @@
 			(type default)
 		)
 		(uuid "47b7c1c5-6065-4bdf-a811-9a3abcc25d6e")
-	)
-	(wire
-		(pts
-			(xy 87.63 87.63) (xy 104.14 87.63)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4868c44c-0aa8-464e-90ae-c2032e1d727d")
 	)
 	(wire
 		(pts
@@ -2856,16 +2551,6 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 100.33) (xy 104.14 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "500bc144-0f0b-43f2-8689-7ee900f62d00")
-	)
-	(wire
-		(pts
 			(xy 179.07 107.95) (xy 181.61 107.95)
 		)
 		(stroke
@@ -2886,13 +2571,13 @@
 	)
 	(wire
 		(pts
-			(xy 195.58 144.78) (xy 212.09 144.78)
+			(xy 200.66 102.87) (xy 212.09 102.87)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "510ea2f7-60d1-4e02-b05a-76a6b445ae7d")
+		(uuid "50ef9e44-c9d8-41fb-bd2d-5f047b106c1b")
 	)
 	(wire
 		(pts
@@ -2923,16 +2608,6 @@
 			(type default)
 		)
 		(uuid "58394c78-2743-4c1d-98cb-e5879566b09a")
-	)
-	(wire
-		(pts
-			(xy 205.74 154.94) (xy 212.09 154.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "58e38def-a8c5-46a3-b2e2-b3e7b1fcd417")
 	)
 	(wire
 		(pts
@@ -2973,6 +2648,16 @@
 			(type default)
 		)
 		(uuid "5a9bc0ef-b953-469d-b654-1a0219134894")
+	)
+	(wire
+		(pts
+			(xy 82.55 142.24) (xy 104.14 142.24)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5ad7e6c4-6e96-4011-8d0b-4847159ba454")
 	)
 	(wire
 		(pts
@@ -3076,13 +2761,13 @@
 	)
 	(wire
 		(pts
-			(xy 205.74 95.25) (xy 212.09 95.25)
+			(xy 190.5 36.83) (xy 212.09 36.83)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "5f93b799-1e73-4436-849e-6e00f742c114")
+		(uuid "5f363a8b-0243-4b16-ba6c-3ff36d3026e8")
 	)
 	(wire
 		(pts
@@ -3106,6 +2791,16 @@
 	)
 	(wire
 		(pts
+			(xy 82.55 34.29) (xy 104.14 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "63ae781a-761d-483e-9b41-f37d3a91cd10")
+	)
+	(wire
+		(pts
 			(xy 71.12 49.53) (xy 87.63 49.53)
 		)
 		(stroke
@@ -3113,6 +2808,26 @@
 			(type default)
 		)
 		(uuid "63eac9a4-9ebc-423a-a2fb-b92f8e9f1e60")
+	)
+	(wire
+		(pts
+			(xy 92.71 154.94) (xy 104.14 154.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "64654fe0-9c51-4047-8cc0-ec1fdd936621")
+	)
+	(wire
+		(pts
+			(xy 92.71 149.86) (xy 104.14 149.86)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "64b4c682-96e3-4536-a783-c659ea4a4a91")
 	)
 	(wire
 		(pts
@@ -3166,13 +2881,13 @@
 	)
 	(wire
 		(pts
-			(xy 195.58 39.37) (xy 212.09 39.37)
+			(xy 200.66 95.25) (xy 212.09 95.25)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "66aa4437-9933-4dca-aae6-1c0007758f37")
+		(uuid "6909f9fa-d315-4b25-9b40-a3eeebcfe744")
 	)
 	(wire
 		(pts
@@ -3183,6 +2898,16 @@
 			(type default)
 		)
 		(uuid "6afcd934-0c31-4a28-bae6-cb45ea3349ee")
+	)
+	(wire
+		(pts
+			(xy 92.71 102.87) (xy 104.14 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6bc0213f-8f71-4a07-a9b2-3f803888c20e")
 	)
 	(wire
 		(pts
@@ -3226,36 +2951,6 @@
 	)
 	(wire
 		(pts
-			(xy 195.58 92.71) (xy 212.09 92.71)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6fa9a371-bb0c-4ced-aadf-a0ae170913fd")
-	)
-	(wire
-		(pts
-			(xy 195.58 36.83) (xy 212.09 36.83)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6fd40897-51b9-4639-8acc-fbf096ed3a01")
-	)
-	(wire
-		(pts
-			(xy 195.58 34.29) (xy 212.09 34.29)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7000e1c8-cd38-44cc-a09a-711dbc02e59e")
-	)
-	(wire
-		(pts
 			(xy 120.65 49.53) (xy 120.65 50.8)
 		)
 		(stroke
@@ -3263,16 +2958,6 @@
 			(type default)
 		)
 		(uuid "712cd714-674a-415e-9b7f-c299c4b1c7d3")
-	)
-	(wire
-		(pts
-			(xy 97.79 149.86) (xy 104.14 149.86)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7140fd3c-01b8-4cd6-87f0-ae1b63df3b6f")
 	)
 	(wire
 		(pts
@@ -3346,16 +3031,6 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 102.87) (xy 104.14 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7a859b39-f39d-435d-a548-0d3509ae93d5")
-	)
-	(wire
-		(pts
 			(xy 179.07 36.83) (xy 185.42 36.83)
 		)
 		(stroke
@@ -3393,6 +3068,16 @@
 			(type default)
 		)
 		(uuid "81e033da-b6f7-4d67-863f-53a8aa4dc7cd")
+	)
+	(wire
+		(pts
+			(xy 190.5 39.37) (xy 212.09 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "85f391a2-1892-4be9-942f-405459b7c6c7")
 	)
 	(wire
 		(pts
@@ -3456,13 +3141,13 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 154.94) (xy 104.14 154.94)
+			(xy 190.5 144.78) (xy 212.09 144.78)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "8b638ea9-8df7-4e50-b744-d26324469775")
+		(uuid "8e6c2bd8-bdfa-4ec4-80c1-b06ea786506c")
 	)
 	(wire
 		(pts
@@ -3476,13 +3161,23 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 152.4) (xy 104.14 152.4)
+			(xy 82.55 87.63) (xy 104.14 87.63)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "941b5b3e-5573-4963-a188-5d4f21d9d89a")
+		(uuid "92bc6ef3-c97a-46ed-93d6-41ccfb3adb4e")
+	)
+	(wire
+		(pts
+			(xy 82.55 31.75) (xy 104.14 31.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "93d99ec5-6994-4ba4-9f4a-a379264f7d7f")
 	)
 	(wire
 		(pts
@@ -3493,26 +3188,6 @@
 			(type default)
 		)
 		(uuid "94cee4f4-b237-4388-bd1a-dcbd31db2737")
-	)
-	(wire
-		(pts
-			(xy 205.74 147.32) (xy 212.09 147.32)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9532036e-ebb3-4c09-a94c-b2c0ccf5dab7")
-	)
-	(wire
-		(pts
-			(xy 205.74 46.99) (xy 212.09 46.99)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "954112d9-298e-4303-a8d5-6ad469e0ac4e")
 	)
 	(wire
 		(pts
@@ -3546,23 +3221,13 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 49.53) (xy 104.14 49.53)
+			(xy 190.5 34.29) (xy 212.09 34.29)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "971aed20-9a48-40e7-b8fc-abaff92d18ca")
-	)
-	(wire
-		(pts
-			(xy 195.58 90.17) (xy 212.09 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9756a760-7b9b-4931-99d0-bacf838e5fbc")
+		(uuid "972f59f0-c31f-44b1-b6e0-bacaf15499fd")
 	)
 	(wire
 		(pts
@@ -3576,13 +3241,13 @@
 	)
 	(wire
 		(pts
-			(xy 195.58 142.24) (xy 212.09 142.24)
+			(xy 200.66 46.99) (xy 212.09 46.99)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "97aad55b-5315-48a1-969b-5a66359e6e42")
+		(uuid "988d22f1-a5ca-4ae3-a42f-2afcb37f42cf")
 	)
 	(wire
 		(pts
@@ -3623,16 +3288,6 @@
 			(type default)
 		)
 		(uuid "9c416f1c-dbf3-457e-8068-5aab2ae152ba")
-	)
-	(wire
-		(pts
-			(xy 87.63 34.29) (xy 104.14 34.29)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9d36aa9b-e7dc-445d-bdc2-383bf9fea8d6")
 	)
 	(wire
 		(pts
@@ -3686,6 +3341,16 @@
 	)
 	(wire
 		(pts
+			(xy 92.71 100.33) (xy 104.14 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a02d06d4-458e-4761-8f01-52f773f64dfa")
+	)
+	(wire
+		(pts
 			(xy 179.07 139.7) (xy 185.42 139.7)
 		)
 		(stroke
@@ -3706,6 +3371,26 @@
 	)
 	(wire
 		(pts
+			(xy 200.66 41.91) (xy 212.09 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a401b6d4-1568-41e1-bff2-c2d692bff2f8")
+	)
+	(wire
+		(pts
+			(xy 82.55 39.37) (xy 104.14 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a50d6e14-3e76-4dba-ba91-771c6a71c869")
+	)
+	(wire
+		(pts
 			(xy 179.07 31.75) (xy 185.42 31.75)
 		)
 		(stroke
@@ -3713,6 +3398,16 @@
 			(type default)
 		)
 		(uuid "a5218bdc-0890-4479-8537-2fff2175d4f8")
+	)
+	(wire
+		(pts
+			(xy 92.71 147.32) (xy 104.14 147.32)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a52855f2-67a7-4a88-96d4-7c22f427a4c9")
 	)
 	(wire
 		(pts
@@ -3736,13 +3431,13 @@
 	)
 	(wire
 		(pts
-			(xy 195.58 137.16) (xy 212.09 137.16)
+			(xy 200.66 44.45) (xy 212.09 44.45)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "a7ba371f-0574-4c3f-b31b-fe5f91825c0e")
+		(uuid "a94441a0-e9bc-4ee9-afe6-32d7f6690736")
 	)
 	(wire
 		(pts
@@ -3826,6 +3521,16 @@
 	)
 	(wire
 		(pts
+			(xy 82.55 90.17) (xy 104.14 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b4d2ca2b-4939-47ce-acf1-e54dcb0bbb60")
+	)
+	(wire
+		(pts
 			(xy 43.18 116.84) (xy 43.18 90.17)
 		)
 		(stroke
@@ -3833,6 +3538,16 @@
 			(type default)
 		)
 		(uuid "b5da61a7-f6cf-40a2-ad7f-6af5713b2f06")
+	)
+	(wire
+		(pts
+			(xy 92.71 95.25) (xy 104.14 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b6ec195c-b2ef-472c-8d4f-8d8ba5c8f7e4")
 	)
 	(wire
 		(pts
@@ -3853,26 +3568,6 @@
 			(type default)
 		)
 		(uuid "b7dd689a-9a57-412a-bc1d-ddf7e01acce8")
-	)
-	(wire
-		(pts
-			(xy 205.74 44.45) (xy 212.09 44.45)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b8d56c1c-1e78-440d-9764-887a074b0de1")
-	)
-	(wire
-		(pts
-			(xy 205.74 41.91) (xy 212.09 41.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b955b550-cbfa-42c2-9360-ae568aab7153")
 	)
 	(wire
 		(pts
@@ -3943,16 +3638,6 @@
 			(type default)
 		)
 		(uuid "bff81c5f-0947-42e5-8bcd-a5f173596c9f")
-	)
-	(wire
-		(pts
-			(xy 87.63 144.78) (xy 104.14 144.78)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c084d95b-340d-4ca0-9d2f-8273216b5071")
 	)
 	(wire
 		(pts
@@ -4066,6 +3751,16 @@
 	)
 	(wire
 		(pts
+			(xy 200.66 49.53) (xy 212.09 49.53)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cdb7f202-c43a-4784-942a-9559b4225ee5")
+	)
+	(wire
+		(pts
 			(xy 227.33 46.99) (xy 229.87 46.99)
 		)
 		(stroke
@@ -4176,23 +3871,13 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 44.45) (xy 104.14 44.45)
+			(xy 190.5 139.7) (xy 212.09 139.7)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "d8627d43-471c-46f7-be6d-f9d47ae88a58")
-	)
-	(wire
-		(pts
-			(xy 205.74 100.33) (xy 212.09 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d891e24b-534f-4560-be2c-0a28b98999c0")
+		(uuid "d95ff4ae-bdd3-4f6c-a0b5-faa3773304c2")
 	)
 	(wire
 		(pts
@@ -4236,6 +3921,16 @@
 	)
 	(wire
 		(pts
+			(xy 82.55 85.09) (xy 104.14 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dc99a5c5-8011-4d7e-97eb-255cd266eec6")
+	)
+	(wire
+		(pts
 			(xy 34.29 55.88) (xy 38.1 55.88)
 		)
 		(stroke
@@ -4253,6 +3948,16 @@
 			(type default)
 		)
 		(uuid "e0110443-db40-48ce-a522-affa4f513f7c")
+	)
+	(wire
+		(pts
+			(xy 190.5 90.17) (xy 212.09 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e0b07ec5-84c3-4aa6-82e4-4bdb265331e9")
 	)
 	(wire
 		(pts
@@ -4286,16 +3991,6 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 41.91) (xy 104.14 41.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e733ce7e-6b54-4aaf-a59c-bf03b76cd666")
-	)
-	(wire
-		(pts
 			(xy 148.59 137.16) (xy 148.59 160.02)
 		)
 		(stroke
@@ -4316,6 +4011,16 @@
 	)
 	(wire
 		(pts
+			(xy 190.5 92.71) (xy 212.09 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e9f20cdb-718b-40b8-afd6-922165e1060c")
+	)
+	(wire
+		(pts
 			(xy 41.91 118.11) (xy 41.91 92.71)
 		)
 		(stroke
@@ -4333,6 +4038,26 @@
 			(type default)
 		)
 		(uuid "ec5f7384-2e7d-44e2-8c44-1ca183a1a5c3")
+	)
+	(wire
+		(pts
+			(xy 190.5 87.63) (xy 212.09 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ed601365-5d36-4336-879f-261b38a3bf1e")
+	)
+	(wire
+		(pts
+			(xy 200.66 154.94) (xy 212.09 154.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ee3d1c4c-3a2e-4080-9b66-a5946e96a24e")
 	)
 	(wire
 		(pts
@@ -4376,6 +4101,16 @@
 	)
 	(wire
 		(pts
+			(xy 190.5 31.75) (xy 212.09 31.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f1fa568b-1fdb-4a1d-979b-d26d6c9db943")
+	)
+	(wire
+		(pts
 			(xy 39.37 120.65) (xy 39.37 100.33)
 		)
 		(stroke
@@ -4386,13 +4121,23 @@
 	)
 	(wire
 		(pts
-			(xy 195.58 85.09) (xy 212.09 85.09)
+			(xy 82.55 36.83) (xy 104.14 36.83)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f834659c-1738-48a6-acb5-e6f13b309eeb")
+		(uuid "f76f0476-97e7-47b1-a68a-d4d53d9e7389")
+	)
+	(wire
+		(pts
+			(xy 92.71 46.99) (xy 104.14 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f9197b8b-26e2-4c15-9f18-9ec4c312e6b5")
 	)
 	(wire
 		(pts
@@ -4423,6 +4168,16 @@
 			(type default)
 		)
 		(uuid "fcd8a20e-f362-4f18-9158-632874d3196b")
+	)
+	(wire
+		(pts
+			(xy 200.66 100.33) (xy 212.09 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fd3b5625-4b1f-463b-a402-ea9d8cd3a152")
 	)
 	(wire
 		(pts
@@ -5914,16 +5669,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 200.66 97.79 90)
+		(lib_id "Device:R_Small")
+		(at 80.01 142.24 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "094aeff6-1219-4f0a-be16-8237ed2c0b27")
-		(property "Reference" "RN8"
-			(at 200.66 105.918 90)
+		(uuid "052ac83b-695d-4b9f-bfd3-cf435c87ae43")
+		(property "Reference" "R45"
+			(at 83.82 140.97 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5931,24 +5686,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 205.74 105.918 90)
+			(at 80.01 142.24 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 200.66 90.805 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 200.66 97.79 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 142.24 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5956,8 +5702,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 200.66 97.79 0)
+		(property "Datasheet" "~"
+			(at 80.01 142.24 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5965,8 +5711,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 200.66 97.79 90)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 142.24 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5974,50 +5720,50 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "98a59a3a-d70b-4541-ba41-a6370c2ba49e")
+		(property "LCSC Part" "C22962"
+			(at 80.01 142.24 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "10585bfa-773c-4b7a-b4fd-cf27cc17f4f5")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "5170f243-a8b4-4cc5-94ec-8b992c879d26")
+			(uuid "2ca87986-bcc5-4b99-a972-0f9dfcacd7ca")
 		)
-		(pin "3"
-			(uuid "803f9032-967d-47cd-adfc-92cda0bcd61a")
-		)
-		(pin "7"
-			(uuid "25102ef9-97e1-4d66-bc82-fcdd57590fc1")
-		)
-		(pin "4"
-			(uuid "d5b2e4d1-77b3-4d3d-a3ff-3bf051b4ef2f")
-		)
-		(pin "6"
-			(uuid "143762b0-75f5-4745-baed-ef94e7f19ada")
-		)
-		(pin "8"
-			(uuid "959c033d-b69c-4821-85ee-6d332cf25627")
+		(pin "2"
+			(uuid "175371e2-5ebc-40ff-b86c-7990255d7cf4")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN8")
+					(reference "R45")
 					(unit 1)
 				)
 			)
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 92.71 97.79 90)
+		(lib_id "Device:R_Small")
+		(at 187.96 90.17 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "0b6aa3ac-0ffe-4344-8b1f-a5fbfeefa94a")
-		(property "Reference" "RN7"
-			(at 92.71 105.918 90)
+		(uuid "07435eba-e8a1-4408-8228-ff283320be61")
+		(property "Reference" "R37"
+			(at 191.77 88.9 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6025,24 +5771,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 97.79 105.918 90)
+			(at 187.96 90.17 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 92.71 90.805 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 92.71 97.79 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6050,8 +5787,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 92.71 97.79 0)
+		(property "Datasheet" "~"
+			(at 187.96 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6059,8 +5796,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 92.71 97.79 90)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6068,34 +5805,119 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "07b5a286-460a-499a-9456-dd7dafc2ca47")
+		(property "LCSC Part" "C22962"
+			(at 187.96 90.17 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "f993b8fc-2883-4c02-bdee-0f72ff5f4503")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "c4041ae0-f771-4f13-b9c3-c178d6c2d045")
+			(uuid "7afcba53-9d4d-4f2d-8e49-88251fdbcefb")
 		)
-		(pin "3"
-			(uuid "e930cbf3-28d1-4796-938c-8d4dbfb2585b")
-		)
-		(pin "7"
-			(uuid "f4b83c05-e703-4687-8201-bdffe7f73f43")
-		)
-		(pin "4"
-			(uuid "3a81a1e6-c4bd-4487-9f06-37e88743119f")
-		)
-		(pin "6"
-			(uuid "440b5142-8b35-40c1-8cbb-83cb5334c221")
-		)
-		(pin "8"
-			(uuid "1712aeb4-514f-41b6-bdbf-653350ce4623")
+		(pin "2"
+			(uuid "3456c99d-6e22-471f-96cc-afe295398f73")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN7")
+					(reference "R37")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 90.17 41.91 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "09b61262-d9f8-49af-b4a5-ae32b479bc74")
+		(property "Reference" "R15"
+			(at 93.98 40.64 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 90.17 41.91 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 90.17 41.91 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "cceda257-cf4c-4447-898e-caa57f0674c9")
+		)
+		(pin "2"
+			(uuid "09750af5-dae1-4523-b18f-f284ae9fc58b")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R15")
 					(unit 1)
 				)
 			)
@@ -6226,6 +6048,91 @@
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
 					(reference "U14")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 152.4 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "1614bded-6f4f-48e5-82a5-744e8c3f1607")
+		(property "Reference" "R57"
+			(at 201.93 151.13 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 152.4 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 152.4 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "0d1ef2f3-585a-4af2-b896-041418cfa75f")
+		)
+		(pin "2"
+			(uuid "b752ddaa-3795-41b9-ad0d-adf49daf8c79")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R57")
 					(unit 1)
 				)
 			)
@@ -6431,6 +6338,176 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_Small")
+		(at 80.01 87.63 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "20cbc62d-0196-48b5-9162-7489e9d36e33")
+		(property "Reference" "R28"
+			(at 83.82 86.36 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 80.01 87.63 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 80.01 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 80.01 87.63 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "efd896c2-f8ee-4395-b305-10d0b619be51")
+		)
+		(pin "2"
+			(uuid "1b1f432d-b781-49e8-afc4-5ff1808c7b89")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R28")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 44.45 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "22c299e3-fbf8-4392-b86d-251b1ce32b53")
+		(property "Reference" "R24"
+			(at 201.93 43.18 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 44.45 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 44.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 44.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 44.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 44.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 44.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "2801059f-33e0-4d1f-bbd2-cd892df4b53c")
+		)
+		(pin "2"
+			(uuid "000e089f-469a-4c6f-89e6-0c355c56083a")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R24")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:VCC")
 		(at 168.91 24.13 0)
 		(unit 1)
@@ -6490,6 +6567,91 @@
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
 					(reference "#PWR034")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 187.96 31.75 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "24e973aa-8c3f-466c-957b-e1c50d3bb97e")
+		(property "Reference" "R19"
+			(at 191.77 30.48 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 187.96 31.75 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 187.96 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 187.96 31.75 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "34142e6a-6625-4f27-b4d2-753bea6ebb22")
+		)
+		(pin "2"
+			(uuid "39fd126e-24d2-407f-9b53-eed0eeb2716e")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R19")
 					(unit 1)
 				)
 			)
@@ -6733,16 +6895,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 190.5 34.29 90)
+		(lib_id "Device:R_Small")
+		(at 80.01 139.7 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "2b72fdb4-663a-4177-8344-105d477869b6")
-		(property "Reference" "RN2"
-			(at 190.5 27.178 90)
+		(uuid "2eb6fc04-62a4-42b2-9b29-4360c1d8e458")
+		(property "Reference" "R44"
+			(at 83.82 138.43 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6750,24 +6912,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 190.5 29.21 90)
+			(at 80.01 139.7 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 190.5 27.305 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 190.5 34.29 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 139.7 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6775,8 +6928,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 190.5 34.29 0)
+		(property "Datasheet" "~"
+			(at 80.01 139.7 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6784,8 +6937,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 190.5 34.29 90)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 139.7 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6793,34 +6946,34 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "d1e38330-e8d2-4f56-accc-d667afa74304")
+		(property "LCSC Part" "C22962"
+			(at 80.01 139.7 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "bed056d3-a5ae-4af2-bff9-2ae4708efd9d")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "00782b79-9923-44f2-a589-7fe354173989")
+			(uuid "7f1e4e17-0c76-42bf-b636-7f3e2d04727a")
 		)
-		(pin "3"
-			(uuid "e59d37bb-ec34-48fb-b6de-94bb5ca2ffcf")
-		)
-		(pin "7"
-			(uuid "7cb11544-ff51-4e8b-bf70-0dc274d51cf1")
-		)
-		(pin "4"
-			(uuid "80bc5928-deb2-40b7-aeae-5998a41eae34")
-		)
-		(pin "6"
-			(uuid "9dc9258a-cade-45b3-aa3a-407f75138342")
-		)
-		(pin "8"
-			(uuid "4982f46e-4169-49d0-96e9-7b7930c8823c")
+		(pin "2"
+			(uuid "341b53b1-04b4-47b7-86e8-6bed75627012")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN2")
+					(reference "R44")
 					(unit 1)
 				)
 			)
@@ -6999,6 +7152,91 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 95.25 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "30b03a74-fda4-400b-80e2-8c87f8426c95")
+		(property "Reference" "R39"
+			(at 201.93 93.98 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 95.25 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 95.25 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "222b0f36-a91e-41c9-98f0-1d5e42ef96df")
+		)
+		(pin "2"
+			(uuid "a1071928-8c5d-45a9-8ad0-ad935e9e41bf")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R39")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Connector:TestPoint")
 		(at 34.29 55.88 90)
 		(unit 1)
@@ -7064,16 +7302,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 92.71 44.45 90)
+		(lib_id "Device:R_Small")
+		(at 90.17 49.53 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "3ec7295a-8d1e-4664-a760-8dad9e97a7e1")
-		(property "Reference" "RN3"
-			(at 92.71 52.578 90)
+		(uuid "3849aff1-a84e-4fb6-831b-897980608f37")
+		(property "Reference" "R18"
+			(at 93.98 48.26 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7081,24 +7319,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 97.79 52.578 90)
+			(at 90.17 49.53 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 92.71 37.465 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 92.71 44.45 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 49.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7106,8 +7335,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 92.71 44.45 0)
+		(property "Datasheet" "~"
+			(at 90.17 49.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7115,8 +7344,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 92.71 44.45 90)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 49.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7124,34 +7353,119 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "1eb473d7-86bb-4cab-8b77-75d80f375fc3")
+		(property "LCSC Part" "C22962"
+			(at 90.17 49.53 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "0c89bb24-ae92-4013-8824-9f54c1322ed4")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "f96e3c4e-073f-4a6a-9ce3-1c79fac1293c")
+			(uuid "69076c12-b9d5-4086-b397-d782b7483875")
 		)
-		(pin "3"
-			(uuid "4db15f38-079f-4671-aaf4-02010d001c6e")
-		)
-		(pin "7"
-			(uuid "23c3876e-a88b-45ee-8375-4154c06cc5b3")
-		)
-		(pin "4"
-			(uuid "1e9e642d-ec39-419c-93a5-111de40109db")
-		)
-		(pin "6"
-			(uuid "2789502b-59ec-4069-b51a-f3e03c1c6982")
-		)
-		(pin "8"
-			(uuid "02e7504e-ad09-47da-899f-87b6d77b1e6f")
+		(pin "2"
+			(uuid "d3f721ee-39a8-4066-b0fb-4a7b7ddb0544")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN3")
+					(reference "R18")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 90.17 46.99 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "3c3e51ed-bf51-44ef-b9ae-7a136ad10c55")
+		(property "Reference" "R17"
+			(at 93.98 45.72 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 90.17 46.99 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 90.17 46.99 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ab36feff-90a2-4bd2-9535-8328c1db1817")
+		)
+		(pin "2"
+			(uuid "e2fe97f2-1801-4676-947d-d2cacced066c")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R17")
 					(unit 1)
 				)
 			)
@@ -7404,6 +7718,261 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 154.94 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "49f34e16-8c2c-44bb-a7a0-6337d37b5f80")
+		(property "Reference" "R58"
+			(at 201.93 153.67 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 154.94 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 154.94 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "797848c4-fad1-4c37-a2cc-6c38700f9309")
+		)
+		(pin "2"
+			(uuid "8dee5879-0018-47dc-90f6-238b37a42ee8")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R58")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 90.17 152.4 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "4ba5a813-8ab1-4eab-b211-e07e65f181f3")
+		(property "Reference" "R49"
+			(at 93.98 151.13 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 90.17 152.4 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 90.17 152.4 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "8311dd57-c033-4bc4-85d2-c80b958bb18b")
+		)
+		(pin "2"
+			(uuid "f23e40d2-2747-4e73-8280-d4dcae8e4460")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R49")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 100.33 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "4ca1434a-6a94-4925-850a-8d78b8fcef04")
+		(property "Reference" "R41"
+			(at 201.93 99.06 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 100.33 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 100.33 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "da8c4751-cc04-40ba-9bdb-1ac68d241667")
+		)
+		(pin "2"
+			(uuid "c897acc1-ec89-4bc6-bfd4-04aa41b31c70")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R41")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Display_Character:SM420561N")
 		(at 219.71 92.71 0)
 		(unit 1)
@@ -7509,6 +8078,91 @@
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
 					(reference "U9")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 187.96 39.37 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "4f2c5829-2d1c-4afe-a65e-f9a8ffa36594")
+		(property "Reference" "R22"
+			(at 191.77 38.1 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 187.96 39.37 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 187.96 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 187.96 39.37 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "1811c23a-180c-4f0e-a235-b647221e2911")
+		)
+		(pin "2"
+			(uuid "6a21160b-64c3-44d0-9588-7bb1726ccced")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R22")
 					(unit 1)
 				)
 			)
@@ -8079,16 +8733,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 190.5 139.7 90)
+		(lib_id "Device:R_Small")
+		(at 80.01 90.17 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "643c1ca9-0698-4914-8794-aa6acbc027ee")
-		(property "Reference" "RN10"
-			(at 190.5 132.588 90)
+		(uuid "61b12e7a-3c5a-4734-ab6a-97335c2ee090")
+		(property "Reference" "R29"
+			(at 83.82 88.9 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8096,24 +8750,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 190.5 134.62 90)
+			(at 80.01 90.17 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 190.5 132.715 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 190.5 139.7 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8121,8 +8766,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 190.5 139.7 0)
+		(property "Datasheet" "~"
+			(at 80.01 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8130,8 +8775,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 190.5 139.7 90)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8139,34 +8784,34 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "8153d422-2edb-4478-b5c0-3ef4cee848f3")
+		(property "LCSC Part" "C22962"
+			(at 80.01 90.17 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "6327a06b-e0c9-4d51-a9ae-305f70f4bae2")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "a1e36b11-9bc8-41e6-bf7d-8ed9fab39276")
+			(uuid "9581c217-d56c-462b-ae8d-b42c7a1105d2")
 		)
-		(pin "3"
-			(uuid "365209d3-a9ec-4c8a-8a82-e65cab564263")
-		)
-		(pin "7"
-			(uuid "aeb433d2-12d8-4155-8d68-bfc82c9162f6")
-		)
-		(pin "4"
-			(uuid "58c65b7f-ee35-4087-9e09-5018f4ff50a3")
-		)
-		(pin "6"
-			(uuid "e69f8412-d1e4-4585-8aff-33609876be2e")
-		)
-		(pin "8"
-			(uuid "121e0da2-fc90-4cc3-870e-e4e4772d1db7")
+		(pin "2"
+			(uuid "8f537047-82fc-46e3-9c3b-1558ff092fd7")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN10")
+					(reference "R29")
 					(unit 1)
 				)
 			)
@@ -8440,16 +9085,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 82.55 139.7 90)
+		(lib_id "Device:R_Small")
+		(at 198.12 102.87 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "77d95db5-698c-44d8-ab1f-9d5f73e25962")
-		(property "Reference" "RN9"
-			(at 82.55 132.588 90)
+		(uuid "70be9074-3e9b-4efc-b8b4-63f3a3f86e55")
+		(property "Reference" "R42"
+			(at 201.93 101.6 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8457,24 +9102,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 82.55 134.62 90)
+			(at 198.12 102.87 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 82.55 132.715 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 82.55 139.7 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8482,8 +9118,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 82.55 139.7 0)
+		(property "Datasheet" "~"
+			(at 198.12 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8491,8 +9127,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 82.55 139.7 90)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8500,34 +9136,119 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "51ac3f37-02ab-4624-857b-6a6bad374941")
+		(property "LCSC Part" "C22962"
+			(at 198.12 102.87 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "dd0a1782-6f34-479e-90d8-e137630efc02")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "18ae9266-30f3-4ccf-b94c-922e962a630d")
+			(uuid "1a1ca33b-4741-4368-857e-8fcdcdc9cbba")
 		)
-		(pin "3"
-			(uuid "2307bb81-d812-483a-a9cd-15ee49fa94cd")
-		)
-		(pin "7"
-			(uuid "dc39dc01-2eea-4b43-a6c7-807da36dd346")
-		)
-		(pin "4"
-			(uuid "5ea097a1-6805-4edd-bd57-113c10a41ebd")
-		)
-		(pin "6"
-			(uuid "d51a2247-cdf6-4a5d-8d3c-6a8888bdb894")
-		)
-		(pin "8"
-			(uuid "e9060a37-39d5-4b34-ac35-74169810a27f")
+		(pin "2"
+			(uuid "fc278c10-99c7-438f-aa7b-bcb14869010c")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN9")
+					(reference "R42")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 80.01 31.75 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "7198af92-cf1f-4f70-a4b9-1277294a9d23")
+		(property "Reference" "R9"
+			(at 83.82 30.48 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 80.01 31.75 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 80.01 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 80.01 31.75 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "510d6025-72f5-4b17-bc3a-6167730f285f")
+		)
+		(pin "2"
+			(uuid "09a0e5cf-f82d-40ec-bcdc-58ea57888844")
+		)
+		(instances
+			(project ""
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R9")
 					(unit 1)
 				)
 			)
@@ -8602,16 +9323,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 82.55 34.29 90)
+		(lib_id "Device:R_Small")
+		(at 187.96 142.24 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "7f209952-9be5-445a-beec-1a07919bae2f")
-		(property "Reference" "RN1"
-			(at 82.55 27.178 90)
+		(uuid "795ba1d4-045f-4f44-bd7e-43f44a307295")
+		(property "Reference" "R53"
+			(at 191.77 140.97 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8619,24 +9340,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 82.55 29.21 90)
+			(at 187.96 142.24 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 82.55 27.305 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 82.55 34.29 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 142.24 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8644,8 +9356,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 82.55 34.29 0)
+		(property "Datasheet" "~"
+			(at 187.96 142.24 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8653,8 +9365,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 82.55 34.29 90)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 142.24 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8662,34 +9374,204 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "419410a9-b7a2-4e38-b4a5-e9a5a9b0fff7")
+		(property "LCSC Part" "C22962"
+			(at 187.96 142.24 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "a3ea0538-13fa-41d6-8521-7d65265ef7c9")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "c8ab9676-d53a-4afa-b1c3-6b256a9a1376")
+			(uuid "6fe29094-a4c7-416b-805e-72c4cec97a27")
 		)
-		(pin "3"
-			(uuid "d4406b51-f2de-4061-8726-af9fe62e15ec")
-		)
-		(pin "7"
-			(uuid "6d390e02-549f-40e6-b7d8-24b271b5b5f4")
-		)
-		(pin "4"
-			(uuid "82254cba-e9b6-4a6d-8261-9ddd8d15d3b5")
-		)
-		(pin "6"
-			(uuid "1868a54f-ea29-45b5-971a-d1bc81f98007")
-		)
-		(pin "8"
-			(uuid "13ccfe86-ab42-48d5-b888-a9f5f1048fd8")
+		(pin "2"
+			(uuid "13f977e8-b78a-4bd3-9dd0-28722b277ee3")
 		)
 		(instances
-			(project ""
+			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN1")
+					(reference "R53")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 187.96 85.09 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "7d67668c-dc18-46e4-8cfd-b35ac5f2a335")
+		(property "Reference" "R35"
+			(at 191.77 83.82 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 187.96 85.09 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 187.96 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 187.96 85.09 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "32c79681-6c21-40b9-9a74-3fed09d19b73")
+		)
+		(pin "2"
+			(uuid "310a833e-76a2-4c88-aeab-694e4cd9ab3c")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R35")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 187.96 87.63 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "80c0c097-c190-4139-b8d0-adf6321ac520")
+		(property "Reference" "R36"
+			(at 191.77 86.36 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 187.96 87.63 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 187.96 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 187.96 87.63 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "6809e95c-edf1-404b-a87b-d2c47ddbbeba")
+		)
+		(pin "2"
+			(uuid "9b1af1e3-71a2-4b9d-94c6-c21554092903")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R36")
 					(unit 1)
 				)
 			)
@@ -8803,16 +9685,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 200.66 149.86 90)
+		(lib_id "Device:R_Small")
+		(at 80.01 144.78 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "8b299f3e-56e6-4e28-a04f-72ce7c1c9d91")
-		(property "Reference" "RN12"
-			(at 200.66 157.988 90)
+		(uuid "877020e0-6c2d-4f20-af7f-ac931f81f97b")
+		(property "Reference" "R46"
+			(at 83.82 143.51 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8820,24 +9702,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 205.74 157.988 90)
+			(at 80.01 144.78 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 200.66 142.875 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 200.66 149.86 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 144.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8845,8 +9718,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 200.66 149.86 0)
+		(property "Datasheet" "~"
+			(at 80.01 144.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8854,8 +9727,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 200.66 149.86 90)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 144.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8863,34 +9736,119 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "7cdd35b0-3ea8-4237-b0f0-b29edfb316ca")
+		(property "LCSC Part" "C22962"
+			(at 80.01 144.78 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "fd7c3c83-b634-4462-add5-c6750d3fca57")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "a712a763-d1c5-4012-a1f1-aba9dc393f07")
+			(uuid "68de54d0-c57a-4920-b6ab-1a1d100728ae")
 		)
-		(pin "3"
-			(uuid "3cf2bc2f-3d36-4405-a69f-5afe4d899dd4")
-		)
-		(pin "7"
-			(uuid "a970b45b-917a-4b5c-9683-6f585fb7d6a4")
-		)
-		(pin "4"
-			(uuid "0e56cfb1-830d-40e7-ae89-049b36884a18")
-		)
-		(pin "6"
-			(uuid "6d19db60-e218-40db-a3b9-3e897d100265")
-		)
-		(pin "8"
-			(uuid "eccb4ee6-a6da-4445-8b5c-8a8edf477106")
+		(pin "2"
+			(uuid "b1fc591e-16ae-4388-98d0-79d2ac6474d1")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN12")
+					(reference "R46")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 90.17 97.79 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "8a03e96c-11da-4764-8d01-baeceb70fa53")
+		(property "Reference" "R32"
+			(at 93.98 96.52 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 90.17 97.79 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 90.17 97.79 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "82abcc04-31a1-4368-8fb7-47db5b58ac63")
+		)
+		(pin "2"
+			(uuid "09dd6623-910d-463a-aed6-c4c4e9654977")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R32")
 					(unit 1)
 				)
 			)
@@ -9091,6 +10049,261 @@
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
 					(reference "#PWR047")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 97.79 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "93dcf389-43bd-48b1-a157-f0fce7dcd742")
+		(property "Reference" "R40"
+			(at 201.93 96.52 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 97.79 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 97.79 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "f6bd126d-3dd1-4cc7-b919-da6a2375afa0")
+		)
+		(pin "2"
+			(uuid "186ea126-d616-4a1e-b52d-fb6a60accf9c")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R40")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 187.96 92.71 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "9713af2e-a456-49c3-9ff2-ef4505fa0e6d")
+		(property "Reference" "R38"
+			(at 191.77 91.44 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 187.96 92.71 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 187.96 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 187.96 92.71 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "9a765b50-26a8-45a7-898d-788d4f5c1922")
+		)
+		(pin "2"
+			(uuid "242ae94e-7c04-43dc-b2ba-9d7690e17b8e")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R38")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 41.91 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "9eaf67e1-8302-4029-bd02-89546e877107")
+		(property "Reference" "R23"
+			(at 201.93 40.64 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 41.91 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 41.91 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ec046047-a9dd-43bd-9961-2fd24c528721")
+		)
+		(pin "2"
+			(uuid "2e02983d-2a18-4668-9f01-4920f650ccee")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R23")
 					(unit 1)
 				)
 			)
@@ -9774,6 +10987,261 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_Small")
+		(at 90.17 95.25 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "b28f3d6c-2098-4be6-87eb-27a3ffd6cf8d")
+		(property "Reference" "R31"
+			(at 93.98 93.98 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 90.17 95.25 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 90.17 95.25 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "aa3a8f46-7a7e-465a-b3fa-d73354e34965")
+		)
+		(pin "2"
+			(uuid "bdfe5c54-1ac6-4475-a935-b11c5d681feb")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R31")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 80.01 39.37 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "b699df65-2c5d-4282-a0ea-d0560c79422a")
+		(property "Reference" "R14"
+			(at 83.82 38.1 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 80.01 39.37 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 80.01 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 80.01 39.37 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "336490eb-23a2-41df-9368-4de803fcdce5")
+		)
+		(pin "2"
+			(uuid "7363b6cd-c3ff-423f-aa4e-e69f242fa2f3")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R14")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 187.96 34.29 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "bbace30d-bb2a-4af3-a1ec-d8e14f21d24d")
+		(property "Reference" "R20"
+			(at 191.77 33.02 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 187.96 34.29 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 187.96 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 187.96 34.29 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d9aadbde-d1c6-4421-87ec-9417184a257a")
+		)
+		(pin "2"
+			(uuid "7236d4b1-f28d-4c70-a8e5-7f40e6b7ecc3")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R20")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:VCC")
 		(at 168.91 77.47 0)
 		(unit 1)
@@ -10017,6 +11485,91 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_Small")
+		(at 187.96 137.16 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c065a74c-3107-4a34-a820-2e18a778a7e7")
+		(property "Reference" "R51"
+			(at 191.77 135.89 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 187.96 137.16 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 187.96 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 187.96 137.16 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "54c85d13-6b9f-4502-91f1-793b2f324ead")
+		)
+		(pin "2"
+			(uuid "10fce6f3-033a-42d7-af94-502258509c68")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R51")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 229.87 157.48 0)
 		(unit 1)
@@ -10078,6 +11631,346 @@
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
 					(reference "#PWR054")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 149.86 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c4e67c4a-fbe7-47ed-8f68-09b187b890f2")
+		(property "Reference" "R56"
+			(at 201.93 148.59 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 149.86 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "f7bb09f7-aa95-4171-aee3-4abe06d7be03")
+		)
+		(pin "2"
+			(uuid "d30e43a7-5bc6-4868-ab50-21109776bb70")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R56")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 187.96 139.7 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c5ab1076-a166-4e38-be29-a7d1f9ae92e7")
+		(property "Reference" "R52"
+			(at 191.77 138.43 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 187.96 139.7 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 187.96 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 187.96 139.7 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "97064d8d-e3aa-486a-9018-7e4d4a97df4b")
+		)
+		(pin "2"
+			(uuid "99747df0-f511-4ec6-803e-92541600c012")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R52")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 80.01 92.71 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c82d8d45-2674-4774-b878-af2260e6fb21")
+		(property "Reference" "R30"
+			(at 83.82 91.44 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 80.01 92.71 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 80.01 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 80.01 92.71 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "82739b49-ec49-4983-be49-59a73b2c859c")
+		)
+		(pin "2"
+			(uuid "f631fc2e-72ee-4b92-a7b7-1bbb498c795b")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R30")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 80.01 36.83 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c86f0217-76c7-405f-84b2-4d9f8eea0ef5")
+		(property "Reference" "R11"
+			(at 83.82 35.56 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 80.01 36.83 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 80.01 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 80.01 36.83 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "67c38e99-f9e8-41a5-b175-f7377ceb581d")
+		)
+		(pin "2"
+			(uuid "b3b8f99c-dc8f-4c7b-a86f-6cad024c6343")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R11")
 					(unit 1)
 				)
 			)
@@ -10152,6 +12045,91 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 49.53 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "ca31cafd-de7a-4289-8236-2cad84c23aa9")
+		(property "Reference" "R26"
+			(at 201.93 48.26 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 49.53 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 49.53 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "30ebfb1a-e9d6-48a1-b5f3-50a62d383817")
+		)
+		(pin "2"
+			(uuid "924237aa-33aa-455c-a1d9-89183afd94d1")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R26")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 168.91 113.03 0)
 		(unit 1)
@@ -10213,6 +12191,91 @@
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
 					(reference "#PWR048")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 147.32 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "cfeb7faf-4133-4599-9c73-f26b9b55f22a")
+		(property "Reference" "R55"
+			(at 201.93 146.05 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 147.32 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 147.32 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7e3c24a8-544d-4eff-8955-b577c8f47e8f")
+		)
+		(pin "2"
+			(uuid "9f26b7fe-1d08-4f94-809a-825cb01698b9")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R55")
 					(unit 1)
 				)
 			)
@@ -10393,6 +12456,91 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_Small")
+		(at 187.96 144.78 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "d76fe48b-a944-4854-81f0-158491806274")
+		(property "Reference" "R54"
+			(at 191.77 143.51 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 187.96 144.78 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 187.96 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 187.96 144.78 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ee5b0c32-3585-40e0-bf38-0524ac25c9c1")
+		)
+		(pin "2"
+			(uuid "4e5d21dc-ab88-4a8d-8da7-7de8fd9aa202")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R54")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Display_Character:SM420561N")
 		(at 111.76 144.78 0)
 		(unit 1)
@@ -10504,6 +12652,176 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_Small")
+		(at 198.12 46.99 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "da341683-4c92-4101-92cf-2385314b20e1")
+		(property "Reference" "R25"
+			(at 201.93 45.72 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 198.12 46.99 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 198.12 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 198.12 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 198.12 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 198.12 46.99 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 198.12 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "817595e1-97b1-40e4-932f-b7292803cddb")
+		)
+		(pin "2"
+			(uuid "a5c7ceb3-b671-422f-a22c-8211e1b534fe")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R25")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 90.17 147.32 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "dbe694fc-ce55-4792-bdc9-74eb12b87790")
+		(property "Reference" "R47"
+			(at 93.98 146.05 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 90.17 147.32 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 90.17 147.32 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "9c178ee6-5e4c-45b9-9b3f-277061530f98")
+		)
+		(pin "2"
+			(uuid "6db1ba77-66ca-4be5-a673-f4a2580a1838")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R47")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 60.96 165.1 0)
 		(unit 1)
@@ -10571,16 +12889,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 92.71 149.86 90)
+		(lib_id "Device:R_Small")
+		(at 90.17 44.45 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "e2162018-01fe-4c60-83f9-6779ee78bd95")
-		(property "Reference" "RN11"
-			(at 92.71 157.988 90)
+		(uuid "dd88a4c3-561d-45ec-92a9-24874c40b27c")
+		(property "Reference" "R16"
+			(at 93.98 43.18 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10588,24 +12906,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 97.79 157.988 90)
+			(at 90.17 44.45 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 92.71 142.875 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 92.71 149.86 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 44.45 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10613,8 +12922,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 92.71 149.86 0)
+		(property "Datasheet" "~"
+			(at 90.17 44.45 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10622,8 +12931,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 92.71 149.86 90)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 44.45 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10631,34 +12940,204 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "71dbfa9c-eead-429d-ae45-64f7f467f098")
+		(property "LCSC Part" "C22962"
+			(at 90.17 44.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "3b44eac1-2511-46cf-8192-7a62e376cc44")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 44.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "4fba4418-d372-422b-99a6-02097e404e46")
+			(uuid "7e637b12-cf69-4e90-9985-b9b25ea98930")
 		)
-		(pin "3"
-			(uuid "a251d112-b848-4167-81c2-af95efb4824b")
-		)
-		(pin "7"
-			(uuid "f618123e-846a-465f-a204-88979a64ffa7")
-		)
-		(pin "4"
-			(uuid "ccafb2d2-fba6-4b2d-a810-572c3515c5a5")
-		)
-		(pin "6"
-			(uuid "c22819a7-692f-43c9-9e5f-74c82515703e")
-		)
-		(pin "8"
-			(uuid "153fb09a-946c-4cdb-a38e-fbd0467c42ba")
+		(pin "2"
+			(uuid "c39cd9fb-c726-4316-90e5-fb893245f5e6")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN11")
+					(reference "R16")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 90.17 154.94 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "df9fbbbe-730d-4a1f-98e8-29c0937af438")
+		(property "Reference" "R50"
+			(at 93.98 153.67 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 90.17 154.94 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 90.17 154.94 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "841bcbe8-0341-481b-92d4-c9fc87e5aa4f")
+		)
+		(pin "2"
+			(uuid "d01ae05d-a3d1-4467-ba96-09c78f0549aa")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R50")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 80.01 85.09 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "e443f941-fd83-4d45-bd5f-99562422a851")
+		(property "Reference" "R27"
+			(at 83.82 83.82 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 80.01 85.09 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 80.01 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 80.01 85.09 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "bca773b5-6765-4672-a327-2f23ea1c3560")
+		)
+		(pin "2"
+			(uuid "80bf6968-d332-465e-ae50-742eb7f61c4b")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R27")
 					(unit 1)
 				)
 			)
@@ -10730,16 +13209,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 82.55 87.63 90)
+		(lib_id "Device:R_Small")
+		(at 187.96 36.83 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "ebf00295-2e4b-43a6-b876-450857544d6f")
-		(property "Reference" "RN5"
-			(at 82.55 80.518 90)
+		(uuid "eaf60f1e-abb1-4f92-b521-1ed6ed173406")
+		(property "Reference" "R21"
+			(at 191.77 35.56 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10747,24 +13226,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 82.55 82.55 90)
+			(at 187.96 36.83 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 82.55 80.645 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 82.55 87.63 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 187.96 36.83 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10772,8 +13242,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 82.55 87.63 0)
+		(property "Datasheet" "~"
+			(at 187.96 36.83 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10781,8 +13251,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 82.55 87.63 90)
+		(property "Description" "Resistor, small symbol"
+			(at 187.96 36.83 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10790,34 +13260,34 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "8ca4c2ad-6e89-41ad-8ec1-2e7c4b461846")
+		(property "LCSC Part" "C22962"
+			(at 187.96 36.83 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "aa6a1b8a-8bd2-4af1-9787-01ef3266d689")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 187.96 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "437c5384-d3f4-4ef1-80d0-dd173efb1dda")
+			(uuid "5a7a7778-6756-4501-80a2-addcc5491454")
 		)
-		(pin "3"
-			(uuid "21d6ce80-09bd-46af-b58c-d52e99642526")
-		)
-		(pin "7"
-			(uuid "1261f622-1d3a-488b-82ff-7f53ac7bf43a")
-		)
-		(pin "4"
-			(uuid "b8dab5ed-ca01-49e1-9bfc-cb73cea3e918")
-		)
-		(pin "6"
-			(uuid "fcd97a9f-e77d-4806-9816-82e1b86286ff")
-		)
-		(pin "8"
-			(uuid "745cff2a-1c0b-4989-8a64-59527016e3ab")
+		(pin "2"
+			(uuid "e8d57724-d403-41cc-9b07-8fce54afaf16")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN5")
+					(reference "R21")
 					(unit 1)
 				)
 			)
@@ -10889,16 +13359,16 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 200.66 44.45 90)
+		(lib_id "Device:R_Small")
+		(at 80.01 137.16 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "f1bab625-179e-4a47-a4e8-875daa265496")
-		(property "Reference" "RN4"
-			(at 200.66 52.578 90)
+		(uuid "ec6c9fb9-7671-4c8b-9c8a-6d5d7ef2dd90")
+		(property "Reference" "R43"
+			(at 83.82 135.89 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10906,24 +13376,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 205.74 52.578 90)
+			(at 80.01 137.16 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 200.66 37.465 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 200.66 44.45 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 137.16 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10931,8 +13392,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 200.66 44.45 0)
+		(property "Datasheet" "~"
+			(at 80.01 137.16 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10940,8 +13401,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 200.66 44.45 90)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 137.16 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10949,50 +13410,50 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "49d9e8e9-1dfe-4408-971c-f0e5bef76551")
+		(property "LCSC Part" "C22962"
+			(at 80.01 137.16 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "09edb462-2f7e-4c53-b6f1-07ba8a001cce")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "d14e7433-b728-45f4-b8fe-66537ef8786d")
+			(uuid "78e8dd62-913f-4582-b127-e961cda48bc4")
 		)
-		(pin "3"
-			(uuid "e75cbb92-7a6b-4d36-902e-3581ff3a364c")
-		)
-		(pin "7"
-			(uuid "2cf98e9a-68f0-4063-9d7b-42d1c4b23651")
-		)
-		(pin "4"
-			(uuid "658fc400-0840-4270-a7ed-e795bb1e185e")
-		)
-		(pin "6"
-			(uuid "c447763d-7bc2-4f68-b0c3-458da88128b4")
-		)
-		(pin "8"
-			(uuid "80f157e7-9666-469b-ac10-24fbb4fd5641")
+		(pin "2"
+			(uuid "2f6906d4-49a6-4d68-841f-a09a934dac3e")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN4")
+					(reference "R43")
 					(unit 1)
 				)
 			)
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 190.5 87.63 90)
+		(lib_id "Device:R_Small")
+		(at 90.17 100.33 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "f60c038d-3108-4044-91a2-6d4319a7957c")
-		(property "Reference" "RN6"
-			(at 190.5 80.518 90)
+		(uuid "ecb31c76-d792-491c-8864-a5513b794648")
+		(property "Reference" "R33"
+			(at 93.98 99.06 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11000,24 +13461,15 @@
 			)
 		)
 		(property "Value" "220R"
-			(at 190.5 82.55 90)
+			(at 90.17 100.33 90)
 			(effects
 				(font
-					(size 1.27 1.27)
+					(size 0.635 0.635)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 190.5 80.645 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2304140030_UNI-ROYAL-Uniroyal-Elec-4D03WGJ0221T5E_C29719.pdf"
-			(at 190.5 87.63 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 100.33 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11025,8 +13477,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 190.5 87.63 0)
+		(property "Datasheet" "~"
+			(at 90.17 100.33 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11034,8 +13486,8 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C29719"
-			(at 190.5 87.63 90)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 100.33 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11043,34 +13495,204 @@
 				(hide yes)
 			)
 		)
-		(pin "2"
-			(uuid "78c358e9-260d-47fd-9ad8-265ec1422bde")
+		(property "LCSC Part" "C22962"
+			(at 90.17 100.33 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
-		(pin "5"
-			(uuid "db800739-d4d4-4ab6-89e4-bf917249efc3")
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
 		)
 		(pin "1"
-			(uuid "09cac73e-3acb-472f-8029-25c67b51cf3b")
+			(uuid "9ed06895-0459-4132-9624-c6d88b1b72c2")
 		)
-		(pin "3"
-			(uuid "1569b8ae-4756-49e2-ad64-1576913bed6f")
-		)
-		(pin "7"
-			(uuid "08cec7b4-ae9a-4743-9285-9ea2adcfa99b")
-		)
-		(pin "4"
-			(uuid "ca115b46-4e62-4dd2-8e96-4f7cad7cc66c")
-		)
-		(pin "6"
-			(uuid "d1565a18-fb26-47c8-b4cc-7dabb1897b22")
-		)
-		(pin "8"
-			(uuid "99fd0bba-a31c-4256-8062-eab097559217")
+		(pin "2"
+			(uuid "2ac2dd57-0d3e-4b40-b8ec-2ea56e5e3d36")
 		)
 		(instances
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
-					(reference "RN6")
+					(reference "R33")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 90.17 149.86 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "ecf36a26-53eb-4aa4-98d8-61b7eb016fce")
+		(property "Reference" "R48"
+			(at 93.98 148.59 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 90.17 149.86 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 90.17 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "b2d450da-f4f6-4836-ad88-8724afd2bbce")
+		)
+		(pin "2"
+			(uuid "dc9b304a-05b9-44c1-9a1d-41a7c6dd7e3f")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R48")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 80.01 34.29 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "fac02388-86ba-49ea-9861-0465bda9d1cc")
+		(property "Reference" "R10"
+			(at 83.82 33.02 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 80.01 34.29 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 80.01 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 80.01 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 80.01 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 80.01 34.29 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 80.01 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "2d52518c-8cbf-4b2f-83f4-f604af255ece")
+		)
+		(pin "2"
+			(uuid "1fb52885-2df7-45d6-9cc7-2d47850824c2")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R10")
 					(unit 1)
 				)
 			)
@@ -11136,6 +13758,91 @@
 			(project "stm32-shift-display"
 				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
 					(reference "TP5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 90.17 102.87 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "fd0a31d5-3b7a-4acc-9b72-2c733238dd16")
+		(property "Reference" "R34"
+			(at 93.98 101.6 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "220R"
+			(at 90.17 102.87 90)
+			(effects
+				(font
+					(size 0.635 0.635)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 90.17 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 90.17 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C22962"
+			(at 90.17 102.87 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR Part" "0603WAF2200T5E"
+			(at 90.17 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d312b7e9-9af3-47fa-ad7f-d5ba136e4ba4")
+		)
+		(pin "2"
+			(uuid "a46224e9-4a40-4084-b473-31cc3b300efb")
+		)
+		(instances
+			(project "stm32-shift-display"
+				(path "/78ca6241-d0b3-4fa3-b2c9-2a71653b35d4/dd19548e-27db-4aa7-82d4-e638eb74b93d"
+					(reference "R34")
 					(unit 1)
 				)
 			)
