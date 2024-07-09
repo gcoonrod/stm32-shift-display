@@ -117,7 +117,7 @@
 		(allow_soldermask_bridges_in_footprints no)
 		(aux_axis_origin 127 60.96)
 		(pcbplotparams
-			(layerselection 0x00010fc_ffffffff)
+			(layerselection 0x00011fc_ffffffff)
 			(plot_on_all_layers_selection 0x0000000_00000000)
 			(disableapertmacros no)
 			(usegerberextensions no)
@@ -130,7 +130,7 @@
 			(plotframeref no)
 			(viasonmask no)
 			(mode 1)
-			(useauxorigin no)
+			(useauxorigin yes)
 			(hpglpennumber 1)
 			(hpglpenspeed 20)
 			(hpglpendiameter 15.000000)
@@ -141,17 +141,17 @@
 			(dxfusepcbnewfont yes)
 			(psnegative no)
 			(psa4output no)
-			(plotreference yes)
-			(plotvalue yes)
-			(plotfptext yes)
+			(plotreference no)
+			(plotvalue no)
+			(plotfptext no)
 			(plotinvisibletext no)
 			(sketchpadsonfab no)
 			(subtractmaskfromsilk no)
-			(outputformat 1)
+			(outputformat 5)
 			(mirror no)
-			(drillshape 1)
+			(drillshape 0)
 			(scaleselection 1)
-			(outputdirectory "")
+			(outputdirectory "assets/")
 		)
 	)
 	(net 0 "")
@@ -1253,7 +1253,7 @@
 			(uuid "a09eca82-785a-4a7b-81db-4614ac6e3516")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 3.81 360)
+			(at 0 3.81 0)
 			(layer "F.Fab")
 			(uuid "e18cda54-cc95-4c82-8924-f2a94945261a")
 			(effects
@@ -3153,7 +3153,7 @@
 		(descr "Through hole straight pin header, 1x05, 2.54mm pitch, single row")
 		(tags "Through hole pin header THT 1x05 2.54mm single row")
 		(property "Reference" "J3"
-			(at -0.508 12.446 360)
+			(at -0.508 12.446 0)
 			(layer "F.SilkS")
 			(uuid "488104a9-0890-45db-9ac4-bb32079d6c98")
 			(effects
@@ -3164,7 +3164,7 @@
 			)
 		)
 		(property "Value" "HDR_UART"
-			(at 0 12.49 360)
+			(at 0 12.49 0)
 			(layer "F.Fab")
 			(uuid "c769be5b-ceff-42e6-81fe-c14c2f95ddb3")
 			(effects
@@ -8134,7 +8134,7 @@
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R2"
-			(at 0 1.17 360)
+			(at 0 1.17 0)
 			(layer "B.SilkS")
 			(uuid "b9f3803b-55c2-437c-870b-eae1cb61cee5")
 			(effects
@@ -8146,7 +8146,7 @@
 			)
 		)
 		(property "Value" "5k1"
-			(at 0 -1.17 360)
+			(at 0 -1.17 0)
 			(layer "B.Fab")
 			(uuid "db9c0b5a-09de-4bdd-9b4a-67e393f31075")
 			(effects
@@ -8333,7 +8333,7 @@
 			(uuid "c7c529ea-9b50-45db-808d-a5d3c3403ecc")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "be45537c-9d4b-43f9-af92-1dc6365d8337")
 			(effects
@@ -10610,7 +10610,7 @@
 		(descr "SOIC, 16 Pin (JEDEC MS-012AC, https://www.analog.com/media/en/package-pcb-resources/package/pkg_pdf/soic_narrow-r/r_16.pdf), generated with kicad-footprint-generator ipc_gullwing_generator.py")
 		(tags "SOIC SO")
 		(property "Reference" "U10"
-			(at 0 5.9 360)
+			(at 0 5.9 0)
 			(layer "B.SilkS")
 			(uuid "60f95987-32dd-45ce-984c-7dd3b44668c7")
 			(effects
@@ -10622,7 +10622,7 @@
 			)
 		)
 		(property "Value" "74HC595"
-			(at 0 -5.9 360)
+			(at 0 -5.9 0)
 			(layer "B.Fab")
 			(uuid "bc18abb6-2cba-4bdf-ac6d-39fc2d98cfb7")
 			(effects
@@ -10851,7 +10851,7 @@
 			(uuid "591d199d-0ab5-4fcc-84e2-ff240dd479dd")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "03c400d1-4d26-41ef-9e60-794f2e5c1b83")
 			(effects
@@ -11564,7 +11564,7 @@
 		(descr "SOIC, 16 Pin (JEDEC MS-012AC, https://www.analog.com/media/en/package-pcb-resources/package/pkg_pdf/soic_narrow-r/r_16.pdf), generated with kicad-footprint-generator ipc_gullwing_generator.py")
 		(tags "SOIC SO")
 		(property "Reference" "U11"
-			(at 0 5.9 360)
+			(at 0 5.9 0)
 			(layer "B.SilkS")
 			(uuid "daa62f14-70b8-46a9-a07d-c7b0a159f39c")
 			(effects
@@ -11576,7 +11576,7 @@
 			)
 		)
 		(property "Value" "74HC595"
-			(at 0 -5.9 360)
+			(at 0 -5.9 0)
 			(layer "B.Fab")
 			(uuid "c8fb2c20-4c6e-4e10-aac9-21a492ed1cf9")
 			(effects
@@ -11805,7 +11805,7 @@
 			(uuid "7ddfbc0f-513f-46f0-b5cb-3cfce3be3f33")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "9ee21ad3-36c7-4ea9-b527-9d24b8cc9e50")
 			(effects
@@ -15704,7 +15704,7 @@
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R13"
-			(at 0 1.27 360)
+			(at 0 1.27 0)
 			(layer "B.SilkS")
 			(uuid "e83b2cbe-124d-4538-84d5-5419c2cd0a73")
 			(effects
@@ -15716,7 +15716,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 0 -1.17 360)
+			(at 0 -1.17 0)
 			(layer "B.Fab")
 			(uuid "4861bf54-d365-4b2f-b500-70f632f8ed0c")
 			(effects
@@ -15903,7 +15903,7 @@
 			(uuid "60028abf-9298-4c17-be5f-caeba8a4c85b")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "39739633-1718-4599-935f-852cc1580ca7")
 			(effects
@@ -19533,7 +19533,7 @@
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R12"
-			(at 0 -1.143 360)
+			(at 0 -1.143 0)
 			(layer "B.SilkS")
 			(uuid "a298c4ce-166b-4863-835b-4b2aca3830de")
 			(effects
@@ -19545,7 +19545,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 0 -1.17 360)
+			(at 0 -1.17 0)
 			(layer "B.Fab")
 			(uuid "5f919a06-098d-48fd-a42b-aca30cc53b43")
 			(effects
@@ -19732,7 +19732,7 @@
 			(uuid "738d028f-0475-4833-8dc8-3b692953cf1e")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "48a5bc56-ae5a-4ee2-ac7b-0e6bae8abc6b")
 			(effects
@@ -19780,7 +19780,7 @@
 		(descr "SOIC, 16 Pin (JEDEC MS-012AC, https://www.analog.com/media/en/package-pcb-resources/package/pkg_pdf/soic_narrow-r/r_16.pdf), generated with kicad-footprint-generator ipc_gullwing_generator.py")
 		(tags "SOIC SO")
 		(property "Reference" "U14"
-			(at 0 5.9 360)
+			(at 0 5.9 0)
 			(layer "B.SilkS")
 			(uuid "def81973-2dde-4858-9c99-6297f7f854ee")
 			(effects
@@ -19792,7 +19792,7 @@
 			)
 		)
 		(property "Value" "74HC595"
-			(at 0 -5.9 360)
+			(at 0 -5.9 0)
 			(layer "B.Fab")
 			(uuid "351ac903-ca94-4372-aa16-803c69e1aaa2")
 			(effects
@@ -20021,7 +20021,7 @@
 			(uuid "43d91ff4-66d2-411a-abe5-4c66e2946879")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "58c31e47-43ea-4de5-b952-70d6b1eebc80")
 			(effects
@@ -28770,7 +28770,7 @@
 		(descr "SOIC, 16 Pin (JEDEC MS-012AC, https://www.analog.com/media/en/package-pcb-resources/package/pkg_pdf/soic_narrow-r/r_16.pdf), generated with kicad-footprint-generator ipc_gullwing_generator.py")
 		(tags "SOIC SO")
 		(property "Reference" "U15"
-			(at 0 5.9 360)
+			(at 0 5.9 0)
 			(layer "B.SilkS")
 			(uuid "20c5db0b-dc38-4617-8614-64723cf403ec")
 			(effects
@@ -28782,7 +28782,7 @@
 			)
 		)
 		(property "Value" "74HC595"
-			(at 0 -5.9 360)
+			(at 0 -5.9 0)
 			(layer "B.Fab")
 			(uuid "dded5afb-142a-4bcb-890a-2a789038cb33")
 			(effects
@@ -29011,7 +29011,7 @@
 			(uuid "186e4141-d4ff-46b8-a6ea-0324197e57ed")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "75d2ab39-2cc0-4edc-b52c-c04abedb18d4")
 			(effects
@@ -31201,7 +31201,7 @@
 		(descr "SOIC, 16 Pin (JEDEC MS-012AC, https://www.analog.com/media/en/package-pcb-resources/package/pkg_pdf/soic_narrow-r/r_16.pdf), generated with kicad-footprint-generator ipc_gullwing_generator.py")
 		(tags "SOIC SO")
 		(property "Reference" "U7"
-			(at 0 5.9 360)
+			(at 0 5.9 0)
 			(layer "B.SilkS")
 			(uuid "73308801-87b6-40c2-b1d7-8c8e4fa10853")
 			(effects
@@ -31213,7 +31213,7 @@
 			)
 		)
 		(property "Value" "74HC595"
-			(at 0 -5.9 360)
+			(at 0 -5.9 0)
 			(layer "B.Fab")
 			(uuid "910901a9-bad4-4d81-bb5c-bc9cef08c82c")
 			(effects
@@ -31442,7 +31442,7 @@
 			(uuid "a02c987a-c8be-4ff2-b086-195cf0c58fb3")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "4e295664-ac9b-43ea-bfa8-6e4f338ead5a")
 			(effects
@@ -32678,7 +32678,7 @@
 		(descr "SOIC, 16 Pin (JEDEC MS-012AC, https://www.analog.com/media/en/package-pcb-resources/package/pkg_pdf/soic_narrow-r/r_16.pdf), generated with kicad-footprint-generator ipc_gullwing_generator.py")
 		(tags "SOIC SO")
 		(property "Reference" "U6"
-			(at 0 5.9 360)
+			(at 0 5.9 0)
 			(layer "B.SilkS")
 			(uuid "2d080a54-9e7b-4eee-b3d7-308639161d6d")
 			(effects
@@ -32690,7 +32690,7 @@
 			)
 		)
 		(property "Value" "74HC595"
-			(at 0 -5.9 360)
+			(at 0 -5.9 0)
 			(layer "B.Fab")
 			(uuid "28b80fca-7791-4150-9bed-12eeffff7ad8")
 			(effects
@@ -32919,7 +32919,7 @@
 			(uuid "47381f2a-1b7a-46fc-9128-4c71b723f9e0")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "32ba0cf3-bc20-4c51-bcd6-78512b244aff")
 			(effects
@@ -42027,8 +42027,8 @@
 		(filled_polygon
 			(layer "In1.Cu")
 			(pts
-				(xy 192.848363 53.860185) (xy 192.869005 53.876819) (xy 196.542686 57.5505) (xy 196.656814 57.616392)
-				(xy 196.784108 57.6505) (xy 196.915893 57.6505) (xy 203.134108 57.6505) (xy 203.196754 57.6505)
+				(xy 192.848363 53.860185) (xy 192.869005 53.876819) (xy 196.4495 57.457314) (xy 196.542686 57.5505)
+				(xy 196.656814 57.616392) (xy 196.784108 57.6505) (xy 203.134108 57.6505) (xy 203.196754 57.6505)
 				(xy 203.203243 57.650669) (xy 203.53945 57.66829) (xy 203.552358 57.669647) (xy 203.881677 57.721806)
 				(xy 203.894342 57.724497) (xy 204.216422 57.810798) (xy 204.228749 57.814803) (xy 204.540038 57.934296)
 				(xy 204.551873 57.939565) (xy 204.848976 58.090947) (xy 204.860191 58.097423) (xy 205.139832 58.279023)
@@ -45134,8 +45134,8 @@
 		(filled_polygon
 			(layer "In2.Cu")
 			(pts
-				(xy 192.848363 53.860185) (xy 192.869005 53.876819) (xy 196.542686 57.5505) (xy 196.656814 57.616392)
-				(xy 196.784108 57.6505) (xy 196.915893 57.6505) (xy 203.134108 57.6505) (xy 203.196754 57.6505)
+				(xy 192.848363 53.860185) (xy 192.869005 53.876819) (xy 196.4495 57.457314) (xy 196.542686 57.5505)
+				(xy 196.656814 57.616392) (xy 196.784108 57.6505) (xy 203.134108 57.6505) (xy 203.196754 57.6505)
 				(xy 203.203243 57.650669) (xy 203.53945 57.66829) (xy 203.552358 57.669647) (xy 203.881677 57.721806)
 				(xy 203.894342 57.724497) (xy 204.216422 57.810798) (xy 204.228749 57.814803) (xy 204.540038 57.934296)
 				(xy 204.551873 57.939565) (xy 204.848976 58.090947) (xy 204.860191 58.097423) (xy 205.139832 58.279023)
