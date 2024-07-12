@@ -11,8 +11,8 @@
 #include <Arduino.h>
 #include "./ShiftDisplay.h"
 
-#define DP_BP 7
-#define DP_BM 0b01000000
+#define DP_BP 1
+#define DP_BM 0b00000001
 #define GET_BIT(byte, bit) (((byte) >> (bit)) & 0x01)
 
 /**
