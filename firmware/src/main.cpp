@@ -7,18 +7,18 @@
 
 using namespace ace_button;
 
-#define SER PB3
-#define SRCLK PB4
-#define SRCLRB PB5
-#define RCLK PB6
-#define OEB PB7
+#define SER PA3
+#define SRCLK PA4
+#define SRCLRB PA1
+#define RCLK PA2
+#define OEB PA0
 
-#define LED_BOT PA0
-#define LED_MID PA1
-#define LED_TOP PA2
-#define BTN_SET PA3
-#define BTN_PLUS PA4
-#define BTN_MINUS PA5
+#define LED_BOT PB6
+#define LED_MID PB7
+#define LED_TOP PB8
+#define BTN_SET PB5
+#define BTN_PLUS PB4
+#define BTN_MINUS PB3
 
 // Utility types
 enum ButtonState
