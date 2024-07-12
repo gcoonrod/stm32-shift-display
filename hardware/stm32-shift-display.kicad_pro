@@ -63,7 +63,18 @@
           "width": 0.4
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "clearance|200352500|81174000|81bd5cf2-aa5f-4a76-8d29-d1da9be2d5c4|e9b7388b-8a23-493f-aef7-4b18a07a9b92",
+        "clearance|200352500|86974000|32c9bd6a-57a2-45ee-8d27-be5d3a4b2ec0|4cc41e2e-a8af-487a-b509-527f7d2852a5",
+        "hole_clearance|200352500|81374000|e3e40148-8ec1-485c-ac52-c84304c81416|e9b7388b-8a23-493f-aef7-4b18a07a9b92",
+        "hole_clearance|200352500|86774000|92cf1c61-3591-4618-b9cc-53a6040725e2|4cc41e2e-a8af-487a-b509-527f7d2852a5",
+        "items_not_allowed|127000000|99060000|1e1539fe-b641-46c3-b583-9da8abd2fedd|00000000-0000-0000-0000-000000000000",
+        "items_not_allowed|203200000|99060000|5e6e3988-92c9-47d3-b0e4-5b237e053357|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|202272500|84074000|87cf569a-a431-4d59-a1c6-efef21d0b8a0|00000000-0000-0000-0000-000000000000",
+        "unconnected_items|169672000|97663000|cb21ef7a-ef36-4090-8cea-228c030b575e|073505dd-c898-4d91-97f8-9a3aa31dd3ce",
+        "unconnected_items|179415000|91208000|042ae7b9-2cb1-4a8b-b8e8-ca4d847c14c2|bb2f08ac-cde0-45e9-83a0-8900b58b9794",
+        "unconnected_items|184842500|92767500|e55b55ff-a07b-4024-ab62-f6a1824f57a5|bd403c31-334e-4ddb-8cd6-84a6c0b32163"
+      ],
       "meta": {
         "version": 2
       },
@@ -604,7 +615,7 @@
           "group_by": true,
           "label": "LCSC Part",
           "name": "LCSC Part",
-          "show": false
+          "show": true
         }
       ],
       "filter_string": "",
