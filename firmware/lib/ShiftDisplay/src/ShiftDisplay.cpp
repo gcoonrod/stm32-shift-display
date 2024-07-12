@@ -13,6 +13,7 @@
 
 #define DP_BP 7
 #define DP_BM 0b01000000
+#define GET_BIT(byte, bit) (((byte) >> (bit)) & 0x01)
 
 /**
  * Bit Position:  7   6   5   5   3   2   1   0
@@ -35,7 +36,11 @@ static const uint8_t segment_data[] = {
     0b00011101, // 'C'
     0b10100111, // 'D' (d)
     0b00011111, // 'E'
-    0b00011011  // 'F'
+    0b00011011, // 'F'
+    0b00111101, // 'G'
+    0b10101011, // 'H'
+    0b00000000, // ' ' (space)
+    
 };
 
 ShiftDisplay::ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t rclk, uint16_t oe)
@@ -48,6 +53,45 @@ ShiftDisplay::ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t
     _initialized = false;
     _delay_us = 0;
     _delay_ms = 0;
+}
+
+void ShiftDisplay::update_buffer(const char *new_content)
+{
+    if (new_content == nullptr)
+    {
+        return;
+    }
+
+    size_t len = strlen(new_content);
+    if (len > _char_buffer_size)
+    {
+        len = _char_buffer_size;
+    }
+
+    for (size_t i = 0; i < len; i++)
+    {
+        _buffer[i] = new_content[i];
+    }
+}
+
+void ShiftDisplay::update_character(uint8_t index, char ascii, bool dp)
+{
+    if (index >= _char_buffer_size)
+    {
+        return;
+    }
+
+    _buffer[index] = ascii;
+    _dp_state = dp ? SET_BIT(_dp_state, index) : CLEAR_BIT(_dp_state, index);
+}
+
+void ShiftDisplay::update_display()
+{
+    // Shift out the buffer in reverse order
+    for (int i = _char_buffer_size - 1; i >= 0; i--)
+    {
+        shiftOutAscii(_buffer[i], GET_BIT(_dp_state, i));
+    }
 }
 
 void ShiftDisplay::begin(uint32_t delay_us)
@@ -69,16 +113,27 @@ void ShiftDisplay::begin(uint32_t delay_us)
     _initialized = true;
 }
 
+void ShiftDisplay::update()
+{
+    if (!_initialized)
+    {
+        return;
+    }
+
+    update_display();
+}
+
 uint8_t ShiftDisplay::map_ascii(char hex_char)
 {
     // Error checking: ensure input is a valid hexadecimal character
-    if (!((hex_char >= '0' && hex_char <= '9') || (hex_char >= 'A' && hex_char <= 'F')))
+    if (!((hex_char >= '0' && hex_char <= '9') || (hex_char >= 'A' && hex_char <= 'H') || (hex_char == ' ')))
     {
-        if (hex_char == ' ')
-        {
-            return 0;
-        }
         return 0b10101000; // Indicate invalid character with 3 horizontal bars
+    }
+
+    if (hex_char == ' ')
+    {
+        return 0;
     }
 
     // Convert character to index (subtract ASCII offset)
@@ -120,6 +175,13 @@ void ShiftDisplay::shiftOutByte(uint8_t byte, bool dp)
 void ShiftDisplay::shiftOutAscii(char ascii, bool dp)
 {
     shiftOutByte(map_ascii(ascii), dp);
+}
+
+void ShiftDisplay::writeDisplay(const char *buffer, uint8_t dp)
+{
+    update_buffer(buffer);
+    _dp_state = dp;
+    update_display();
 }
 
 void ShiftDisplay::enable()
