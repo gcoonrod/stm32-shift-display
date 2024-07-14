@@ -3,7 +3,10 @@
 #include <ShiftDisplayFSM.h>
 #include <STM32RTC.h>
 #include <AceButton.h>
+#include <SerialCommands.h>
 #include "header.h"
+
+#define SERIAL_COMMANDS_DEBUG
 
 using namespace ace_button;
 
@@ -30,14 +33,22 @@ enum ButtonState
   UNCHANGED
 };
 
-/**
- * Bit Position:  7   6   5   5   3   2   1   0
- * 595 Outputs:   QA  QB  QC  QD  QE  QF  QG  QH
- * 7 Segment LED: D   E   G   F   A   B   DP  C
- */
-
 ShiftDisplay display(SER, SRCLK, SRCLRB, RCLK, OEB);
 ShiftDisplayFSM stateMachine;
+
+char serial_command_buffer_[32];
+SerialCommands serial_commands_(&Serial, serial_command_buffer_, sizeof(serial_command_buffer_), "\r\n", " ");
+void cmd_unrecognized(SerialCommands* sender, const char* cmd);
+void cmd_test(SerialCommands* sender);
+void cmd_set_hour(SerialCommands* sender);
+void cmd_set_minute(SerialCommands* sender);
+void cmd_set_second(SerialCommands* sender);
+
+SerialCommand cmd_test_("TEST", cmd_test);
+SerialCommand cmd_set_hour_("SETH", cmd_set_hour);
+SerialCommand cmd_set_minute_("SETM", cmd_set_minute);
+SerialCommand cmd_set_second_("SETS", cmd_set_second);
+
 STM32RTC &rtc = STM32RTC::getInstance();
 DateTimeBuffer_t date_time_buf = {0, 1, RTC_MONTH_JANUARY, 1, 0, 0, 0};
 bool time_dirty = true;
@@ -101,6 +112,15 @@ void setup()
   ledTimer->setOverflow(1000, HERTZ_FORMAT);
   ledTimer->attachInterrupt(irq_timer_led);
   ledTimer->resume();
+
+  setup_usb();
+  Serial.dtr(true);
+  serial_commands_.SetDefaultHandler(cmd_unrecognized);
+  serial_commands_.AddCommand(&cmd_test_);
+  serial_commands_.AddCommand(&cmd_set_hour_);
+  serial_commands_.AddCommand(&cmd_set_minute_);
+  serial_commands_.AddCommand(&cmd_set_second_);
+  Serial.println("Started");
 }
 
 void loop()
@@ -110,6 +130,9 @@ void loop()
   btnSet.check();
   btnPlus.check();
   btnMinus.check();
+
+  // Check Serial for input
+  serial_commands_.ReadSerial();
 
   // Update display based on current state
   State currentState = stateMachine.getState();
@@ -213,7 +236,7 @@ void setup_rtc()
 
 void setup_usb()
 {
-  // TODO: Configure USB as virtual com, HID, or DFU depending on boot mode
+  Serial.println(F("Shift Clock Started"));
 }
 
 void printClock()
@@ -300,4 +323,76 @@ void printSetHourMenu()
   sprintf(buffer, "HH  %02d", hours);
   display.writeDisplay(buffer, 0b00000000);
   display.latch();
+}
+
+void cmd_unrecognized(SerialCommands* sender, const char* cmd)
+{
+  sender->GetSerial()->print(F("Unrecognized command ["));
+  sender->GetSerial()->print(cmd);
+  sender->GetSerial()->println(F("]"));
+}
+
+void cmd_test(SerialCommands* sender)
+{
+  Serial.println("TEST");
+}
+
+void cmd_set_hour(SerialCommands* sender)
+{
+  char* hour_str = sender->Next();
+  if (hour_str == NULL)
+  {
+    sender->GetSerial()->println("ERROR NO_HOUR");
+    return;
+  }
+
+  int hour = atoi(hour_str);
+  if (hour < 0 || hour >= 24)
+  {
+    sender->GetSerial()->printf("ERROR HOUR OUT OF RANGE {%d}: %s", hour, hour_str);
+    return;
+  }
+
+  date_time_buf.hours = hour;
+  rtc.setHours(hour);
+}
+
+void cmd_set_minute(SerialCommands* sender)
+{
+  char* m_str = sender->Next();
+  if (m_str == NULL)
+  {
+    sender->GetSerial()->println("ERROR NO_MINUTE");
+    return;
+  }
+
+  int m = atoi(m_str);
+  if (m < 0 || m >= 60)
+  {
+    sender->GetSerial()->printf("ERROR MINUTE OUT OF RANGE {%d}: %s", m, m_str);
+    return;
+  }
+
+  date_time_buf.minutes = m;
+  rtc.setMinutes(m);
+}
+
+void cmd_set_second(SerialCommands* sender)
+{
+  char* second_str = sender->Next();
+  if (second_str == NULL)
+  {
+    sender->GetSerial()->println("ERROR NO_SECOND");
+    return;
+  }
+
+  int second = atoi(second_str);
+  if (second < 0 || second >= 60)
+  {
+    sender->GetSerial()->printf("ERROR SECOND OUT OF RANGE {%d}: %s", second, second_str);
+    return;
+  }
+
+  date_time_buf.seconds = second;
+  rtc.setSeconds(second);
 }
