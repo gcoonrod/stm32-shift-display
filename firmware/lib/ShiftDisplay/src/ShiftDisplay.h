@@ -27,8 +27,16 @@ private:
     uint32_t _delay_us;
     uint32_t _delay_ms;
 
+    // Private display state vars
+    uint8_t _dp_state = 0b00000000; // [0:5] -> [0:5] DP state for each character, [6:7] -> Not used
+    static const uint8_t _char_buffer_size = 6;
+    char _buffer[_char_buffer_size] = {' ', ' ', ' ', ' ', ' ', ' '};
+
 protected:
     uint8_t map_ascii(char hex_char);
+    void update_buffer(const char* new_content);
+    void update_character(uint8_t index, char ascii, bool dp);
+    void update_display();
 
 public:
     ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t rclk, uint16_t oe);
@@ -37,6 +45,8 @@ public:
     {
         begin(0U);
     }
+
+    void update();
 
     void shiftOutByte(uint8_t byte, bool dp);
     void shiftOutByte(uint8_t byte)
@@ -49,6 +59,8 @@ public:
     {
         shiftOutAscii(ascii, false);
     }
+
+    void writeDisplay(const char* buffer, uint8_t dp);
 
     void enable();
     void disable();
