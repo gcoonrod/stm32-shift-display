@@ -38,11 +38,11 @@ ShiftDisplayFSM stateMachine;
 
 char serial_command_buffer_[32];
 SerialCommands serial_commands_(&Serial, serial_command_buffer_, sizeof(serial_command_buffer_), "\r\n", " ");
-void cmd_unrecognized(SerialCommands* sender, const char* cmd);
-void cmd_test(SerialCommands* sender);
-void cmd_set_hour(SerialCommands* sender);
-void cmd_set_minute(SerialCommands* sender);
-void cmd_set_second(SerialCommands* sender);
+void cmd_unrecognized(SerialCommands *sender, const char *cmd);
+void cmd_test(SerialCommands *sender);
+void cmd_set_hour(SerialCommands *sender);
+void cmd_set_minute(SerialCommands *sender);
+void cmd_set_second(SerialCommands *sender);
 
 SerialCommand cmd_test_("TEST", cmd_test);
 SerialCommand cmd_set_hour_("SETH", cmd_set_hour);
@@ -61,13 +61,7 @@ ButtonState btnSetState = ButtonState::UNCHANGED;
 ButtonState btnPlusState = ButtonState::UNCHANGED;
 ButtonState btnMinusState = ButtonState::UNCHANGED;
 
-#if defined(TIME1)
-TIM_TypeDef *timer = TIM1;
-#else
-TIM_TypeDef *timer = TIM2;
-#endif
-
-HardwareTimer *ledTimer = new HardwareTimer(timer);
+HardwareTimer *AlrmLEDTim;
 
 uint8_t weekDay;
 uint8_t day;
@@ -108,10 +102,6 @@ void setup()
 
   display.begin();
   display.enable();
-
-  ledTimer->setOverflow(1000, HERTZ_FORMAT);
-  ledTimer->attachInterrupt(irq_timer_led);
-  ledTimer->resume();
 
   setup_usb();
   Serial.dtr(true);
@@ -186,11 +176,17 @@ void setup_user_leds()
 {
   pinMode(LED_TOP, OUTPUT);
   pinMode(LED_MID, OUTPUT);
-  pinMode(LED_BOT, OUTPUT);
+  // pinMode(LED_BOT, OUTPUT);
 
   digitalWrite(LED_TOP, LOW);
   digitalWrite(LED_MID, LOW);
-  digitalWrite(LED_BOT, LOW);
+  // digitalWrite(LED_BOT, LOW);
+
+  // Alarm LED PWM
+  TIM_TypeDef *botInstance = (TIM_TypeDef *)pinmap_peripheral(digitalPinToPinName(LED_BOT), PinMap_PWM);
+  uint32_t botChannel = STM_PIN_CHANNEL(pinmap_function(digitalPinToPinName(LED_BOT), PinMap_PWM));
+  AlrmLEDTim = new HardwareTimer(botInstance);
+  AlrmLEDTim->setPWM(botChannel, LED_BOT, 60, 10);
 }
 
 void setup_user_btns()
@@ -325,21 +321,21 @@ void printSetHourMenu()
   display.latch();
 }
 
-void cmd_unrecognized(SerialCommands* sender, const char* cmd)
+void cmd_unrecognized(SerialCommands *sender, const char *cmd)
 {
   sender->GetSerial()->print(F("Unrecognized command ["));
   sender->GetSerial()->print(cmd);
   sender->GetSerial()->println(F("]"));
 }
 
-void cmd_test(SerialCommands* sender)
+void cmd_test(SerialCommands *sender)
 {
   Serial.println("TEST");
 }
 
-void cmd_set_hour(SerialCommands* sender)
+void cmd_set_hour(SerialCommands *sender)
 {
-  char* hour_str = sender->Next();
+  char *hour_str = sender->Next();
   if (hour_str == NULL)
   {
     sender->GetSerial()->println("ERROR NO_HOUR");
@@ -357,9 +353,9 @@ void cmd_set_hour(SerialCommands* sender)
   rtc.setHours(hour);
 }
 
-void cmd_set_minute(SerialCommands* sender)
+void cmd_set_minute(SerialCommands *sender)
 {
-  char* m_str = sender->Next();
+  char *m_str = sender->Next();
   if (m_str == NULL)
   {
     sender->GetSerial()->println("ERROR NO_MINUTE");
@@ -377,9 +373,9 @@ void cmd_set_minute(SerialCommands* sender)
   rtc.setMinutes(m);
 }
 
-void cmd_set_second(SerialCommands* sender)
+void cmd_set_second(SerialCommands *sender)
 {
-  char* second_str = sender->Next();
+  char *second_str = sender->Next();
   if (second_str == NULL)
   {
     sender->GetSerial()->println("ERROR NO_SECOND");
