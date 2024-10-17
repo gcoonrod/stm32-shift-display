@@ -4,6 +4,8 @@
 #include <STM32RTC.h>
 #include <AceButton.h>
 #include <SerialCommands.h>
+#include <time.h>
+#include <stdlib.h>
 #include "header.h"
 
 #define SERIAL_COMMANDS_DEBUG
@@ -40,18 +42,21 @@ char serial_command_buffer_[32];
 SerialCommands serial_commands_(&Serial, serial_command_buffer_, sizeof(serial_command_buffer_), "\r\n", " ");
 void cmd_unrecognized(SerialCommands *sender, const char *cmd);
 void cmd_test(SerialCommands *sender);
-void cmd_set_hour(SerialCommands *sender);
-void cmd_set_minute(SerialCommands *sender);
-void cmd_set_second(SerialCommands *sender);
+void cmd_set_time(SerialCommands *sender);
+void cmd_get_time(SerialCommands *sender);
+void cmd_set_offset(SerialCommands *sender);
+void cmd_get_offset(SerialCommands *sender);
 
 SerialCommand cmd_test_("TEST", cmd_test);
-SerialCommand cmd_set_hour_("SETH", cmd_set_hour);
-SerialCommand cmd_set_minute_("SETM", cmd_set_minute);
-SerialCommand cmd_set_second_("SETS", cmd_set_second);
+SerialCommand cmd_set_time_("ST", cmd_set_time);
+SerialCommand cmd_get_time_("GT", cmd_get_time);
+SerialCommand cmd_set_offset_("SO", cmd_set_offset);
+SerialCommand cmd_get_offset_("GO", cmd_get_offset);
 
 STM32RTC &rtc = STM32RTC::getInstance();
 DateTimeBuffer_t date_time_buf = {0, 1, RTC_MONTH_JANUARY, 1, 0, 0, 0};
 bool time_dirty = true;
+int8_t timezoneOffset = -5; // CDT
 
 AceButton btnSet(BTN_SET);
 AceButton btnPlus(BTN_PLUS);
@@ -105,11 +110,14 @@ void setup()
 
   setup_usb();
   Serial.dtr(true);
+  Serial.begin();
   serial_commands_.SetDefaultHandler(cmd_unrecognized);
   serial_commands_.AddCommand(&cmd_test_);
-  serial_commands_.AddCommand(&cmd_set_hour_);
-  serial_commands_.AddCommand(&cmd_set_minute_);
-  serial_commands_.AddCommand(&cmd_set_second_);
+  serial_commands_.AddCommand(&cmd_set_time_);
+  serial_commands_.AddCommand(&cmd_get_time_);
+  serial_commands_.AddCommand(&cmd_set_offset_);
+  serial_commands_.AddCommand(&cmd_get_offset_);
+
   Serial.println("Started");
 }
 
@@ -176,17 +184,17 @@ void setup_user_leds()
 {
   pinMode(LED_TOP, OUTPUT);
   pinMode(LED_MID, OUTPUT);
-  // pinMode(LED_BOT, OUTPUT);
+  pinMode(LED_BOT, OUTPUT);
 
   digitalWrite(LED_TOP, LOW);
   digitalWrite(LED_MID, LOW);
-  // digitalWrite(LED_BOT, LOW);
+  digitalWrite(LED_BOT, LOW);
 
   // Alarm LED PWM
-  TIM_TypeDef *botInstance = (TIM_TypeDef *)pinmap_peripheral(digitalPinToPinName(LED_BOT), PinMap_PWM);
-  uint32_t botChannel = STM_PIN_CHANNEL(pinmap_function(digitalPinToPinName(LED_BOT), PinMap_PWM));
-  AlrmLEDTim = new HardwareTimer(botInstance);
-  AlrmLEDTim->setPWM(botChannel, LED_BOT, 60, 10);
+  // TIM_TypeDef *botInstance = (TIM_TypeDef *)pinmap_peripheral(digitalPinToPinName(LED_BOT), PinMap_PWM);
+  // uint32_t botChannel = STM_PIN_CHANNEL(pinmap_function(digitalPinToPinName(LED_BOT), PinMap_PWM));
+  // AlrmLEDTim = new HardwareTimer(botInstance);
+  // AlrmLEDTim->setPWM(botChannel, LED_BOT, 60, 10);
 }
 
 void setup_user_btns()
@@ -391,4 +399,82 @@ void cmd_set_second(SerialCommands *sender)
 
   date_time_buf.seconds = second;
   rtc.setSeconds(second);
+}
+
+tm* unixTimestampToTime(const char *timestampStr) {
+  // Convert the timestamp string to a time_t object
+  time_t timestamp = atol(timestampStr); 
+
+  timestamp += timezoneOffset * 60 * 60;
+
+  // Use localtime to convert the timestamp to a tm struct
+  return localtime(&timestamp); 
+}
+
+void cmd_set_time(SerialCommands *sender)
+{
+  char *timestampStr = sender->Next();
+  if (timestampStr == NULL)
+  {
+    sender->GetSerial()->println("ERROR NO_TIMESTAMP");
+    return;
+  }
+
+  tm *time = unixTimestampToTime(timestampStr);
+
+  date_time_buf.hours = time->tm_hour;
+  date_time_buf.minutes = time->tm_min;
+  date_time_buf.seconds = time->tm_sec;
+  date_time_buf.day = time->tm_mday;
+  date_time_buf.month = time->tm_mon;
+  date_time_buf.year = time->tm_year - 100;
+
+  rtc.setHours(time->tm_hour);
+  rtc.setMinutes(time->tm_min);
+  rtc.setSeconds(time->tm_sec);
+  rtc.setDay(time->tm_mday);
+  rtc.setMonth(time->tm_mon);
+  rtc.setYear(time->tm_year - 100);
+
+  sender->GetSerial()->println("OK");
+}
+
+void cmd_get_time(SerialCommands *sender)
+{
+
+  // convert the date_time_buf to tm struct
+  tm time = {0};
+  time.tm_hour = date_time_buf.hours;
+  time.tm_min = date_time_buf.minutes;
+  time.tm_sec = date_time_buf.seconds;
+  time.tm_mday = date_time_buf.day;
+  time.tm_mon = date_time_buf.month;
+  time.tm_year = date_time_buf.year + 100;
+
+  // Apply the timezone offset to change the time to UTC
+  time.tm_sec -= timezoneOffset * 60 * 60;
+
+  time_t timestamp = mktime(&time);
+
+  // Return the current time as a Unix timestamp
+  sender->GetSerial()->println(timestamp);
+}
+
+void cmd_set_offset(SerialCommands *sender)
+{
+  char *offsetStr = sender->Next();
+  if (offsetStr == NULL)
+  {
+    sender->GetSerial()->println("ERROR NO_OFFSET");
+    return;
+  }
+
+  int offset = atoi(offsetStr);
+  timezoneOffset = offset;
+  sender->GetSerial()->println("OK");
+}
+
+void cmd_get_offset(SerialCommands *sender)
+{
+  sender->GetSerial()->println(timezoneOffset);
 }
