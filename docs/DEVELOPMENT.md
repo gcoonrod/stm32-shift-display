@@ -58,35 +58,52 @@ with `** Verified OK **` and `** Resetting Target **`.
 > **Do not pipe `pio run` through `tee`.** The exit status you get back is `tee`'s,
 > so a failed build looks like a success. Redirect instead: `pio run > build.log 2>&1`.
 
-### Why the platform version is pinned
+### Why the platform version is constrained
 
-`firmware/platformio.ini` pins `platform = ststm32@19.7.1`. Unpinned, PlatformIO
-resolves the latest platform, which ships Arduino core 4.x
-(`framework-arduinoststm32@4.30000.0`). Against that core:
+`firmware/platformio.ini` sets `platform = ststm32@^20.0.0` — a range, not a pin. The
+range holds the major line this firmware has been verified against while still accepting
+20.x updates; moving to a future platform 21 is then a deliberate change with its own
+hardware verification, rather than a silent jump.
 
-- STM32duino RTC and STM32duino Low Power fail to compile internally — `HardwareSerial`
-  has no `_serial` or `configForLowPower` member, and `PinStatus` conversions fail.
-- `STM32RTC.h` typedefs `voidFuncPtr` as `void (*)(void*)` while the core's
-  `api/Common.h` typedefs it as `void (*)()`, a conflicting declaration.
-- That conflict reaches this source: `rtc.attachSecondsInterrupt(irq_rtc_seconds)` in
-  `main.cpp` passes a `void (*)(void*)`, which no longer matches.
+Note that PlatformIO's framework *package* version is not the Arduino core version it
+carries. Conflating the two is easy and was the source of an earlier misdiagnosis here:
 
-19.7.1 is the newest platform still on the 2.x core line (`framework-arduinoststm32@4.21200.0`),
-where the current library versions and this source compile unmodified. Platforms
-contemporary with the original 2024 development (17.x, 18.x) cannot be used at all —
-their framework packages (`~4.20801.0`, `~4.20900.0`) are no longer in the PlatformIO
-registry, and installing them fails with `UnknownPackageError`.
+| PlatformIO package | Arduino core (`platform.txt`) |
+| --- | --- |
+| `framework-arduinoststm32@4.30000.0` | **3.0.0** — current, what this builds against |
+| `framework-arduinoststm32@4.21200.0` | **2.12.0** — the previously pinned line |
+
+This project was briefly pinned to `ststm32@19.7.1` (core 2.12.0) because the build
+failed against core 3.0.0. The cause was library drift, not the core:
+`STM32duino RTC@1.9.0` declared its own `voidFuncPtr` as `void (*)(void*)`, colliding
+with the core's `api/Common.h` `typedef void (*voidFuncPtr)(void)`. `STM32duino RTC@2.0.0`
+drops that typedef and takes `voidFuncPtrParam` (`void (*)(void*)`) for
+`attachSecondsInterrupt`, which is the shape `main.cpp`'s `irq_rtc_seconds(void *data)`
+already had — so the upgrade needed no source change. `STM32duino Low Power` also failed
+to compile against core 3.0.0 and was referenced nowhere in `src/`, `lib/`, or
+`include/`, so it was removed from `lib_deps` rather than ported.
+
+Do not try to pin *backward* to a platform contemporary with the original 2024
+development. 17.x and 18.x cannot be installed at all: their framework packages
+(`~4.20801.0`, `~4.20900.0`) are no longer in the registry and resolution fails with
+`UnknownPackageError`. That purge is why this project tracks a current range instead of
+an exact old release.
 
 Versions resolved by the verified build:
 
 ```
-ststm32@19.7.1              framework-arduinoststm32@4.21200.0
-STM32duino RTC@1.9.0        STM32duino Low Power@1.5.0
-AceButton@1.10.1            SerialCommands@2.2.0
+ststm32@20.0.0              framework-arduinoststm32@4.30000.0 (Arduino core 3.0.0)
+STM32duino RTC@2.0.0        AceButton@1.10.1
+SerialCommands@2.2.0
 ```
 
-`STM32duino Low Power` is declared in `lib_deps` but is not included or called
-anywhere in `src/` or `lib/`. It is still compiled, so it can still break a build.
+Two warnings are expected and benign: `SerialCommands` uses the deprecated `boolean`
+type, and `STM32RTC` emits `#warning "only BCD mode is supported"`, which is simply true
+of the STM32F1 RTC.
+
+One stale reference remains on purpose: commit `109d621`, which introduced the original
+pin, describes core 3.0.0 as "Arduino core 4.x". Its message is wrong but the history is
+merged, so it is left alone rather than rewritten. This section is the correct account.
 
 ## Talking to the board
 
