@@ -38,3 +38,20 @@ production/
 
 # Plugin specific files
 fabrication-toolkit-options.json
+
+# macOS
+.DS_Store
+
+# Local editor / agent state
+.claude/settings.local.json
+settings.local.json
+*.code-workspace
+
+# Build output
+firmware/.pio/
+
+# Python environments
+.venv/
+# Python bytecode
+__pycache__/
+*.pyc
