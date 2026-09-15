@@ -56,7 +56,7 @@ SerialCommand cmd_get_offset_("GO", cmd_get_offset);
 STM32RTC &rtc = STM32RTC::getInstance();
 DateTimeBuffer_t date_time_buf = {0, 1, RTC_MONTH_JANUARY, 1, 0, 0, 0};
 bool time_dirty = true;
-int8_t timezoneOffset = -5; // CDT
+int8_t timezoneOffset = -6; // CST
 
 AceButton btnSet(BTN_SET);
 AceButton btnPlus(BTN_PLUS);

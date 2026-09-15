@@ -3,8 +3,13 @@ import ntplib
 import csv
 import os
 import argparse
+import datetime
+
+from zoneinfo import ZoneInfo
 from time import ctime, time
 from dataclasses import dataclass
+
+tz = ZoneInfo("America/Chicago")
 
 @dataclass
 class TimeSyncRun:
@@ -17,10 +22,21 @@ def get_ntp_time(ntp_server="pool.ntp.org"):
     try:
         client = ntplib.NTPClient()
         response = client.request(ntp_server)
-        return response.tx_time
+        
+        return __apply_dst(response.tx_time)
     except ntplib.NTPException as e:
-        print(f"Error: {e}")
-        return None
+        print(f"Error fetching time from NTP server: {e}")
+        exit(-1)
+
+def __apply_dst(time: int):
+    return time + __get_dst_offset()
+
+def __get_dst_offset():
+    now = datetime.datetime.now(tz)
+    if now.dst() != datetime.timedelta(0):
+        return 3600
+    else:
+        return 0
 
 def get_device_time():
     try:
@@ -33,8 +49,8 @@ def get_device_time():
         return int(response)
 
     except serial.SerialException as e:
-        print(f"Error: {e}")
-        return None
+        print(f"Error getting time from device: {e}")
+        exit(-1)
 
     finally:
         if ser.is_open:
@@ -55,8 +71,8 @@ def set_device_time(time: int):
             return False
 
     except serial.SerialException as e:
-        print(f"Error: {e}")
-        return False
+        print(f"Error setting device time: {e}")
+        exit(-1)
 
     finally:
         if ser.is_open:
