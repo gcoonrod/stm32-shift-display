@@ -52,11 +52,19 @@ While armed, the device SHALL signal when the time of day reaches the alarm time
 - **THEN** nothing happens
 
 ### Requirement: Firing is signalled visibly and can be dismissed
-The board has no sounder, so the alarm SHALL signal visually: the display flashes and the bottom LED blinks. Any button press SHALL dismiss it.
+The board has no sounder, so the alarm SHALL signal visually: the display flashes and the bottom LED breathes, fading smoothly up and down rather than switching on and off. Any button press SHALL dismiss it.
 
 #### Scenario: Visual signal
 - **WHEN** the alarm is firing
-- **THEN** the display flashes and the bottom LED blinks, distinguishing it from the steady armed indication
+- **THEN** the display flashes and the bottom LED breathes, distinguishing it from the steady armed indication
+
+#### Scenario: Breathing is smooth
+- **WHEN** the bottom LED is breathing
+- **THEN** its brightness changes in steps fine enough that the fade reads as continuous rather than as visible stepping
+
+#### Scenario: Breathing respects the configured brightness
+- **WHEN** the alarm breathes while the indicator brightness is set low
+- **THEN** the breath peaks at the configured brightness rather than overriding it to full
 
 #### Scenario: Any button dismisses
 - **WHEN** any of the three buttons is pressed while the alarm is firing
@@ -69,6 +77,10 @@ The board has no sounder, so the alarm SHALL signal visually: the display flashe
 #### Scenario: Timekeeping is unaffected
 - **WHEN** the alarm fires and is left signalling
 - **THEN** the clock continues to keep time, and the time read back over serial is correct
+
+#### Scenario: Firing is observable from a host
+- **WHEN** the alarm is firing and the LED state is read over serial repeatedly
+- **THEN** the reported bottom-LED value varies as the LED breathes, so a firing alarm can be detected without looking at the board
 
 ### Requirement: Alarm and mode settings survive power loss
 The alarm time, the armed state, and the 12/24-hour mode SHALL persist across a power cycle, stored in backup domain registers held up by the coin cell. Storage SHALL NOT use the registers the RTC library reserves for its own date storage.
