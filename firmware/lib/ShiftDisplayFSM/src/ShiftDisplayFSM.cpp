@@ -16,6 +16,7 @@ uint8_t menuFieldCount(MenuState item)
     case MENU_DATE:  return 3; // day, month, year
     case MENU_MODE:  return 1; // 12/24
     case MENU_ALARM: return 3; // hours, minutes, armed
+    case MENU_BRIGHT: return 1; // indicator level
     default:         return 0;
     }
 }
