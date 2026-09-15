@@ -56,7 +56,11 @@ out; `update()` re-shifts the existing buffer. **Shifting out does not make anyt
 `_buffer[0]` is the leftmost digit. `map_ascii()` indexes one ASCII-keyed table, which is the single source of truth for what
 renders: a character is drawable exactly when it has a non-zero entry. Add glyphs there and
 nowhere else. `M` and `W` are absent deliberately — neither is legible on seven segments.
-`enable()`/`disable()` drive the 595 `OE` line — the hook intended for PWM brightness.
+`enable()`/`disable()` are brightness operations on the 595 `~OE` line, which `ShiftDisplay`
+owns along with its active-low inversion — `enable()` restores the configured brightness,
+not full. Never `digitalWrite` PA0; it would reconfigure the pin away from TIM2 and blank
+the display. `analogWrite` resolution and frequency are global and shared with the LEDs,
+set once in `setup()`.
 
 **Timekeeping.** `STM32RTC` on LSE with a seconds interrupt (`irq_rtc_seconds`) that copies the
 whole date/time into the global `DateTimeBuffer_t date_time_buf` (`firmware/include/header.h`) and

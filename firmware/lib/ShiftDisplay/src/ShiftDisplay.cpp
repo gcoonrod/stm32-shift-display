@@ -21,9 +21,27 @@
  * 7 Segment LED: A   B   C   D   E   F   G   DP
  */
 
+/**
+ * Segment bits, named. Glyphs below are written as unions of these rather than
+ * as binary literals: SEG_E | SEG_F is either right or obviously wrong, whereas
+ * 0b00011000 is neither, and the compiler accepts any eight bits you hand it.
+ * Three glyph bugs were written as literals before this existed -- a missing
+ * entry, a stray decimal point, and one built from the wrong two bits.
+ *
+ * The compiler folds these, so the table costs exactly what it did before.
+ */
+#define SEG_A 0b10000000  /* top          */
+#define SEG_B 0b01000000  /* upper right  */
+#define SEG_C 0b00100000  /* lower right  */
+#define SEG_D 0b00010000  /* bottom       */
+#define SEG_E 0b00001000  /* lower left   */
+#define SEG_F 0b00000100  /* upper left   */
+#define SEG_G 0b00000010  /* middle       */
+#define SEG_DP 0b00000001 /* decimal point -- driven from _dp_state, never set in a glyph */
+
 // Shown for any character with no glyph, so an unrenderable character fails
 // visibly rather than as a blank.
-#define SEG_INVALID 0b10101000
+#define SEG_INVALID (SEG_A | SEG_C | SEG_E)
 
 /**
  * Glyph patterns indexed by ASCII code, offset by SEG_FIRST_CHAR. This table is
@@ -45,54 +63,55 @@
 
 static const uint8_t segment_data[] = {
     /* ' ' */ 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     /* ! " # $ % & ' ( ) * + , */
-    /* '-' */ 0b00000010,
-    0, 0,                                    /* . / */
-    /* '0' */ 0b11111100,
-    /* '1' */ 0b01100000,
-    /* '2' */ 0b11011010,
-    /* '3' */ 0b11110010,
-    /* '4' */ 0b01100110,
-    /* '5' */ 0b10110110,
-    /* '6' */ 0b10111110,
-    /* '7' */ 0b11100000,
-    /* '8' */ 0b11111110,
-    /* '9' */ 0b11110110,
-    0, 0, 0, 0, 0, 0, 0,                     /* : ; < = > ? @ */
-    /* 'A' */ 0b11101110,
-    /* 'B' */ 0b00011110,
-    /* 'C' */ 0b10011100,
-    /* 'D' */ 0b01111010,
-    /* 'E' */ 0b10011110,
-    /* 'F' */ 0b10001110,
-    /* 'G' */ 0b10111100,
-    /* 'H' */ 0b01101110,
-    0, 0, 0,                                 /* I J K */
-    /* 'L' */ 0b00011100,
-    0,                                       /* M -- not renderable */
-    /* 'N' */ 0b00101010,                    /* rendered as lowercase n */
-    /* 'O' */ 0b00111010,                    /* rendered as lowercase o */
-    /* 'P' */ 0b11001110,
-    0,                                       /* Q */
-    /* 'R' */ 0b00001010,                    /* rendered as lowercase r */
-    0,                                       /* S -- use 5 */
-    /* 'T' */ 0b00011110,                    /* rendered as lowercase t */
-    /* 'U' */ 0b01111100,
-    0, 0, 0, 0, 0,                           /* V W X Y Z */
-    0, 0, 0, 0, 0, 0,                        /* [ \ ] ^ _ ` */
-    0, 0, 0,                                 /* a b c */
-    /* 'd' */ 0b01111010,                    /* same glyph as 'D' */
-    0, 0, 0, 0, 0, 0, 0,                     /* e f g h i j k */
-    /* 'l' */ 0b00011100,
-    0,                                       /* m */
-    /* 'n' */ 0b00101010,
-    /* 'o' */ 0b00111010,
-    /* 'p' */ 0b11001110,
-    0,                                       /* q */
-    /* 'r' */ 0b00001010,
-    0,                                       /* s */
-    /* 't' */ 0b00011110,
-    /* 'u' */ 0b01111100,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  /* ! " # $ % & ' ( ) * + , */
+    /* '-' */ SEG_G,
+    0, 0,                                /* . / */
+    /* '0' */ SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,
+    /* '1' */ SEG_B | SEG_C,
+    /* '2' */ SEG_A | SEG_B | SEG_D | SEG_E | SEG_G,
+    /* '3' */ SEG_A | SEG_B | SEG_C | SEG_D | SEG_G,
+    /* '4' */ SEG_B | SEG_C | SEG_F | SEG_G,
+    /* '5' */ SEG_A | SEG_C | SEG_D | SEG_F | SEG_G,
+    /* '6' */ SEG_A | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G,
+    /* '7' */ SEG_A | SEG_B | SEG_C,
+    /* '8' */ SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G,
+    /* '9' */ SEG_A | SEG_B | SEG_C | SEG_D | SEG_F | SEG_G,
+    0, 0, 0, 0, 0, 0, 0,                 /* : ; < = > ? @ */
+    /* 'A' */ SEG_A | SEG_B | SEG_C | SEG_E | SEG_F | SEG_G,
+    /* 'B' */ SEG_C | SEG_D | SEG_E | SEG_F | SEG_G,   /* lowercase b */
+    /* 'C' */ SEG_A | SEG_D | SEG_E | SEG_F,
+    /* 'D' */ SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,   /* lowercase d */
+    /* 'E' */ SEG_A | SEG_D | SEG_E | SEG_F | SEG_G,
+    /* 'F' */ SEG_A | SEG_E | SEG_F | SEG_G,
+    /* 'G' */ SEG_A | SEG_C | SEG_D | SEG_E | SEG_F,
+    /* 'H' */ SEG_B | SEG_C | SEG_E | SEG_F | SEG_G,
+    /* 'I' */ SEG_E | SEG_F,   /* the two left verticals */
+    0, 0,                                /* J K */
+    /* 'L' */ SEG_D | SEG_E | SEG_F,
+    0,                                   /* M */
+    /* 'N' */ SEG_C | SEG_E | SEG_G,   /* lowercase n */
+    /* 'O' */ SEG_C | SEG_D | SEG_E | SEG_G,   /* lowercase o */
+    /* 'P' */ SEG_A | SEG_B | SEG_E | SEG_F | SEG_G,
+    0,                                   /* Q */
+    /* 'R' */ SEG_E | SEG_G,   /* lowercase r */
+    /* 'S' */ SEG_A | SEG_C | SEG_D | SEG_F | SEG_G,   /* same shape as '5', as is conventional */
+    /* 'T' */ SEG_D | SEG_E | SEG_F | SEG_G,   /* lowercase t */
+    /* 'U' */ SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* V W X Y Z [ \ ] ^ _ ` a b c */
+    /* 'd' */ SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,
+    0, 0, 0, 0,                          /* e f g h */
+    /* 'i' */ SEG_E | SEG_F,
+    0, 0,                                /* j k */
+    /* 'l' */ SEG_D | SEG_E | SEG_F,
+    0,                                   /* m */
+    /* 'n' */ SEG_C | SEG_E | SEG_G,
+    /* 'o' */ SEG_C | SEG_D | SEG_E | SEG_G,
+    /* 'p' */ SEG_A | SEG_B | SEG_E | SEG_F | SEG_G,
+    0,                                   /* q */
+    /* 'r' */ SEG_E | SEG_G,
+    /* 's' */ SEG_A | SEG_C | SEG_D | SEG_F | SEG_G,
+    /* 't' */ SEG_D | SEG_E | SEG_F | SEG_G,
+    /* 'u' */ SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,
 };
 
 ShiftDisplay::ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t rclk, uint16_t oe)
@@ -105,6 +124,8 @@ ShiftDisplay::ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t
     _initialized = false;
     _delay_us = 0;
     _delay_ms = 0;
+    _brightness = 0;
+    _max_duty = 255;
 }
 
 void ShiftDisplay::update_buffer(const char *new_content)
@@ -146,19 +167,41 @@ void ShiftDisplay::update_display()
     }
 }
 
-void ShiftDisplay::begin(uint32_t delay_us)
+void ShiftDisplay::write_output_enable(uint16_t brightness)
+{
+    if (brightness > _max_duty)
+    {
+        brightness = _max_duty;
+    }
+
+    // ~OE high blanks the outputs, so full brightness is zero duty on the pin.
+    analogWrite(_output_en_pin, _max_duty - brightness);
+}
+
+void ShiftDisplay::setBrightness(uint16_t duty)
+{
+    _brightness = (duty > _max_duty) ? _max_duty : duty;
+    write_output_enable(_brightness);
+}
+
+void ShiftDisplay::begin(uint32_t delay_us, uint16_t max_duty)
 {
     pinMode(_serial_data_pin, OUTPUT);
     pinMode(_serial_clk_pin, OUTPUT);
     pinMode(_serial_clr_pin, OUTPUT);
     pinMode(_latch_clk_pin, OUTPUT);
-    pinMode(_output_en_pin, OUTPUT);
 
     digitalWrite(_serial_data_pin, LOW);
     digitalWrite(_serial_clk_pin, LOW);
     digitalWrite(_serial_clr_pin, HIGH);
     digitalWrite(_latch_clk_pin, LOW);
-    digitalWrite(_output_en_pin, HIGH);
+
+    // ~OE belongs to the timer from here on. Nothing may digitalWrite this pin:
+    // doing so reconfigures it away from its alternate function and silently
+    // stops the brightness control, blanking or stranding the whole display.
+    _max_duty = max_duty;
+    _brightness = 0;
+    write_output_enable(0); // start blank, as the 10k pull-up already does
 
     _delay_us = delay_us;
 
@@ -234,14 +277,16 @@ void ShiftDisplay::writeDisplay(const char *buffer, uint8_t dp)
     update_display();
 }
 
+// enable() restores the configured brightness rather than going to full, so a
+// blank/restore cycle cannot quietly undo the user's setting.
 void ShiftDisplay::enable()
 {
-    digitalWrite(_output_en_pin, LOW);
+    write_output_enable(_brightness);
 }
 
 void ShiftDisplay::disable()
 {
-    digitalWrite(_output_en_pin, HIGH);
+    write_output_enable(0);
 }
 
 void ShiftDisplay::clear()
