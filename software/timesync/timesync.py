@@ -8,6 +8,7 @@ import datetime
 from zoneinfo import ZoneInfo
 from time import ctime, time
 from dataclasses import dataclass
+from serial.tools import list_ports
 
 tz = ZoneInfo("America/Chicago")
 
@@ -37,6 +38,28 @@ def __get_dst_offset():
         return 3600
     else:
         return 0
+
+# USB descriptor of the STM32 Shift Clock's CDC interface. The ST-Link shares the
+# vendor id but reports a different product id, so the two never collide.
+STM32_CDC_VID = 0x0483
+STM32_CDC_PID = 0x5740
+
+def find_device_port():
+    matches = [p for p in list_ports.comports()
+               if p.vid == STM32_CDC_VID and p.pid == STM32_CDC_PID]
+
+    if not matches:
+        print(f"Error: no STM32 CDC device (USB {STM32_CDC_VID:04x}:{STM32_CDC_PID:04x}) found.")
+        print("Check that the board is plugged in, or name a port with --com <port>.")
+        exit(-1)
+
+    if len(matches) > 1:
+        print("Error: more than one STM32 CDC device found. Choose one with --com <port>:")
+        for p in matches:
+            print(f"  {p.device}  serial={p.serial_number}")
+        exit(-1)
+
+    return matches[0].device
 
 def get_device_time():
     try:
@@ -110,10 +133,7 @@ if __name__ == "__main__":
     parser.add_argument("--com", type=str, help="COM port for device")
     args = parser.parse_args()
 
-    if args.com is not None:
-        port = args.com
-    else:
-        port = "/dev/cu.usbmodem49795F7330551"
+    port = args.com if args.com is not None else find_device_port()
     
     baud = 115200
 

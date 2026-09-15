@@ -1,0 +1,13 @@
+[project]
+name = "timesync"
+version = "0.1.0"
+description = "Compare and correct the STM32 Shift Clock's RTC against NTP over USB CDC."
+requires-python = "==3.12.*"
+dependencies = [
+    "ntplib==0.4.0",
+    "pyserial==3.5",
+]
+
+[tool.uv]
+# timesync.py is a script, not an installable package.
+package = false
