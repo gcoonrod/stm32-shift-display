@@ -1,0 +1,37 @@
+schema: spec-driven
+
+context: |
+  STM32 Shift Clock: a desk clock on a custom STM32F103C8T6 board driving a
+  6-character 7-segment display through six daisy-chained 74HC595 shift
+  registers (no multiplexing). Hardware, firmware, host tooling, and the
+  mechanical stand all live in this repo.
+
+  Firmware: C++ on Arduino via PlatformIO, one env (bluepill_f103c8_128k,
+  board genericSTM32F103C8). Cooperative super-loop in firmware/src/main.cpp
+  plus three local libraries under firmware/lib/. Timekeeping is STM32RTC on
+  LSE with a seconds interrupt; USB CDC exposes a small command console.
+  platformio.ini pins platform = ststm32@19.7.1 deliberately — see
+  docs/DEVELOPMENT.md.
+
+  Host tooling: software/timesync/, Python 3.12 managed by uv (pyproject.toml
+  + uv.lock, no requirements.txt). Run via `uv run python timesync.py`.
+
+  Flashing needs an ST-Link on SWD; there is no DFU or bootloader path.
+  There is no test suite — verification is building, flashing, and exercising
+  the board over USB CDC. ./scripts/check-dev-env.sh reports prerequisites.
+
+  Conventions: feature branches off main. Firmware sources carry a
+  CC BY-NC-SA 4.0 header comment. hardware/ is KiCad 8 format and is
+  deliberately not migrated to a newer KiCad. docs/DEVELOPMENT.md is the
+  authority for commands; README.md is the public face; CLAUDE.md is agent
+  guidance.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
