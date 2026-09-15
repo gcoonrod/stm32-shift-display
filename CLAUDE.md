@@ -25,9 +25,11 @@ cd software/timesync && uv run python timesync.py -H
 
 Two traps worth knowing before you touch anything:
 
-- **`platformio.ini` pins `platform = ststm32@19.7.1` deliberately.** Unpinned it resolves to
-  20.0.0 / Arduino core 4.x, where STM32duino RTC and Low Power fail to compile and this source's
-  `void*`-style RTC seconds callback no longer matches. Don't "helpfully" unpin it.
+- **`platformio.ini` constrains `platform = ststm32@^20.0.0` deliberately** — a range, not a
+  pin. It holds the major line the firmware is verified against (Arduino core 3.0.0, carried by
+  `framework-arduinoststm32@4.30000.0` — the package version and the core version differ, don't
+  conflate them). Widening it to a future platform 21 is a deliberate change that needs hardware
+  verification, not a cleanup.
 - **Never pipe `pio run` through `tee`** — you get `tee`'s exit status and a failed build reads as
   success. Redirect instead.
 
@@ -72,8 +74,8 @@ latches into `btnSetState`/`btnPlusState`/`btnMinusState`, which the loop consum
 **`lib/ShiftClock` is dead code** — a standalone software clock superseded by `STM32RTC`. Don't
 extend it without deciding it's actually the path forward.
 
-**`STM32duino Low Power` is an unused `lib_deps` entry** — nothing includes it, but it is still
-compiled, so it can still break a build.
+**Dependencies are RTC, AceButton, and SerialCommands.** `STM32duino Low Power` was removed —
+it was declared but referenced nowhere, and did not compile against core 3.0.0.
 
 ## Host tooling
 

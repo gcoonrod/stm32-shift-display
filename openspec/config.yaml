@@ -10,8 +10,8 @@ context: |
   board genericSTM32F103C8). Cooperative super-loop in firmware/src/main.cpp
   plus three local libraries under firmware/lib/. Timekeeping is STM32RTC on
   LSE with a seconds interrupt; USB CDC exposes a small command console.
-  platformio.ini pins platform = ststm32@19.7.1 deliberately — see
-  docs/DEVELOPMENT.md.
+  platformio.ini constrains platform = ststm32@^20.0.0 (Arduino core 3.0.0)
+  deliberately as a range rather than a pin — see docs/DEVELOPMENT.md.
 
   Host tooling: software/timesync/, Python 3.12 managed by uv (pyproject.toml
   + uv.lock, no requirements.txt). Run via `uv run python timesync.py`.
