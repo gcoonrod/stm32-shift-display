@@ -1,8 +1,33 @@
+// firmware (c) by Greg Coonrod
+//
+// firmware is licensed under a
+// Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+//
+// You should have received a copy of the license along with this
+// work. If not, see <https://creativecommons.org/licenses/by-nc-sa/4.0/>.
+
 #include "ShiftDisplayFSM.h"
+
+uint8_t menuFieldCount(MenuState item)
+{
+    switch (item)
+    {
+    case MENU_TIME:  return 3; // hours, minutes, seconds
+    case MENU_DATE:  return 3; // day, month, year
+    case MENU_MODE:  return 1; // 12/24
+    case MENU_ALARM: return 3; // hours, minutes, armed
+    default:         return 0;
+    }
+}
 
 void ShiftDisplayFSM::update()
 {
+    // Every pending value is committed here. Committing only currentState --
+    // which is what this did originally -- left the menu computing transitions
+    // and then discarding them, so the tree below the top level was unreachable.
     currentState = nextState;
+    currentMenuState = nextMenuState;
+    currentField = nextField;
 }
 
 void ShiftDisplayFSM::setState(State state)
@@ -10,44 +35,113 @@ void ShiftDisplayFSM::setState(State state)
     nextState = state;
 }
 
-State ShiftDisplayFSM::getState()
+bool ShiftDisplayFSM::takeCommit()
 {
-    return currentState;
+    bool pending = commitPending;
+    commitPending = false;
+    return pending;
 }
 
 void ShiftDisplayFSM::execute(Action action)
 {
     switch (action)
     {
-    case Action::MENU_ENTER:
-        if (currentState == State::IDLE)
+    case MENU_ENTER:
+        if (currentState == IDLE)
         {
-            nextState = State::MENU;
-            nextMenuState = MenuState::MENU_SET_TIME;
+            nextState = MENU;
+            nextMenuState = MENU_FIRST;
+            nextField = 0;
         }
         break;
-    case Action::MENU_EXIT:
-        nextState = State::IDLE;
-        nextMenuState = MenuState::MENU_NONE;
-        break;
-    case Action::MENU_UP:
-        break;
-    case Action::MENU_DOWN:
-        break;
-    case Action::MENU_SELECT:
-        if (currentState == State::IDLE)
-            break;
-        switch (currentMenuState)
+
+    case MENU_EXIT:
+        // Back out one level. Leaving an editor discards whatever was being
+        // edited; the caller only writes values through on a commit.
+        switch (currentState)
         {
-        case MenuState::MENU_SET_TIME:
-            nextMenuState = MenuState::MENU_SET_HOUR;
+        case EDIT:
+            nextState = MENU;
+            nextField = 0;
             break;
-        case MenuState::MENU_SET_DATE:
-            nextMenuState = MenuState::MENU_SET_DAY;
-            
+        case MENU:
+            nextState = IDLE;
+            nextMenuState = MENU_NONE;
+            nextField = 0;
+            break;
+        case FIRING:
+            nextState = IDLE;
             break;
         default:
             break;
         }
+        break;
+
+    case MENU_UP:
+        if (currentState == MENU)
+        {
+            nextMenuState = (currentMenuState >= MENU_LAST)
+                                ? (MenuState)MENU_FIRST
+                                : (MenuState)(currentMenuState + 1);
+        }
+        break;
+
+    case MENU_DOWN:
+        if (currentState == MENU)
+        {
+            nextMenuState = (currentMenuState <= MENU_FIRST)
+                                ? (MenuState)MENU_LAST
+                                : (MenuState)(currentMenuState - 1);
+        }
+        break;
+
+    case MENU_SELECT:
+        if (currentState == MENU && menuFieldCount(currentMenuState) > 0)
+        {
+            nextState = EDIT;
+            nextField = 0;
+        }
+        break;
+
+    case EDIT_NEXT:
+        if (currentState == EDIT)
+        {
+            uint8_t last = menuFieldCount(currentMenuState);
+            if (currentField + 1 >= last)
+            {
+                // Past the final field: commit and show the result.
+                commitPending = true;
+                nextState = IDLE;
+                nextMenuState = MENU_NONE;
+                nextField = 0;
+            }
+            else
+            {
+                nextField = currentField + 1;
+            }
+        }
+        break;
+
+    case MENU_TIMEOUT:
+        nextState = IDLE;
+        nextMenuState = MENU_NONE;
+        nextField = 0;
+        break;
+
+    case ALARM_FIRE:
+        nextState = FIRING;
+        nextMenuState = MENU_NONE;
+        nextField = 0;
+        break;
+
+    case ALARM_DISMISS:
+        if (currentState == FIRING)
+        {
+            nextState = IDLE;
+        }
+        break;
+
+    default:
+        break;
     }
 }

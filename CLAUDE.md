@@ -7,8 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 "STM32 Shift Clock" — a desk clock on a custom STM32F103C8T6 board that drives a 6-character
 7-segment display through six daisy-chained 74HC595 shift registers (no multiplexing). The repo
 holds the KiCad hardware design (board **rev 2**), the FreeCAD stand, the PlatformIO/Arduino
-firmware, and a Python host tool. The firmware is unfinished: timekeeping and the USB CDC command
-console work; the on-device menu and brightness control do not.
+firmware, and a Python host tool. Timekeeping, the USB CDC command console, the on-device
+menu, the three indicator LEDs, and a daily alarm all work. Display brightness (PWM on the
+595 `OE` line) is the main thing still unbuilt.
 
 **[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) is the authority for commands** — prerequisites,
 build, flash, the CDC command table, the pin map, known defects, and machine-specific facts. Read
@@ -52,24 +53,30 @@ PlatformIO libs, not published ones.
 decimal points, and subclasses `Print`. `writeDisplay(buf, dp)` updates the buffer and shifts it
 out; `update()` re-shifts the existing buffer. **Shifting out does not make anything visible —
 `latch()` must follow.** Bytes go out LSB-first and the buffer is shifted in reverse index order, so
-`_buffer[0]` is the leftmost digit. `map_ascii()` only knows `0-9`, `A-H`, and space; anything else
-renders as three horizontal bars, so adding glyphs means extending `segment_data[]` and the range
-check together. `enable()`/`disable()` drive the 595 `OE` line — the hook intended for PWM
-brightness.
+`_buffer[0]` is the leftmost digit. `map_ascii()` indexes one ASCII-keyed table, which is the single source of truth for what
+renders: a character is drawable exactly when it has a non-zero entry. Add glyphs there and
+nowhere else. `M` and `W` are absent deliberately — neither is legible on seven segments.
+`enable()`/`disable()` drive the 595 `OE` line — the hook intended for PWM brightness.
 
 **Timekeeping.** `STM32RTC` on LSE with a seconds interrupt (`irq_rtc_seconds`) that copies the
 whole date/time into the global `DateTimeBuffer_t date_time_buf` (`firmware/include/header.h`) and
 sets `time_dirty`. The main loop redraws only when `time_dirty`. RTC values survive reset via VBAT
 (CR2032), so `setup_rtc()` only reinitializes when it detects the epoch default.
 
-**State machine (`lib/ShiftDisplayFSM`).** Two-phase: `execute(action)` computes `nextState`,
-`update()` commits it at the end of the loop. `State` has only `IDLE` and `MENU`; the `MenuState`
-enum enumerates the intended menu tree but `currentMenuState` is never advanced and
-`MENU_UP`/`MENU_DOWN` are empty. This is the main thing to build out for the on-device UI.
+**State machine (`lib/ShiftDisplayFSM`).** Two-phase: `execute(action)` computes the next
+state, `update()` commits it at the end of the loop. `update()` must commit *every* pending
+field — it originally committed only `currentState`, which silently stranded the whole menu
+tree. States are `IDLE`, `MENU`, `EDIT`, `FIRING`; `MenuState` is the top-level entry and the
+field index selects which value an editor is on.
 
-**Input.** Three active-low buttons via AceButton; `handleEvent()` only handles `kEventClicked` and
-latches into `btnSetState`/`btnPlusState`/`btnMinusState`, which the loop consumes and resets to
-`UNCHANGED` each pass. Long-press and repeat are enabled in `ButtonConfig` but not acted on.
+**Input.** Three active-low buttons via AceButton. `handleEvent()` maps click, long-press and
+repeat into `btnSetState`/`btnPlusState`/`btnMinusState`, which the loop consumes and resets each
+pass. `kFeatureDoubleClick` is deliberately off (it delays every click);
+`kFeatureSuppressAfterLongPress` is on so backing out of a level doesn't also emit a click.
+
+**Settings** persist in backup registers DR2/DR3/DR5. DR1, DR4 and DR10 belong to the core and
+DR6/DR7 hold the RTC library's emulated date — writing those corrupts the clock. See
+`docs/DEVELOPMENT.md`.
 
 **`lib/ShiftClock` is dead code** — a standalone software clock superseded by `STM32RTC`. Don't
 extend it without deciding it's actually the path forward.

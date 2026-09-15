@@ -33,7 +33,7 @@ private:
     char _buffer[_char_buffer_size] = {' ', ' ', ' ', ' ', ' ', ' '};
 
 protected:
-    uint8_t map_ascii(char hex_char);
+    uint8_t map_ascii(char ascii);
     void update_buffer(const char* new_content);
     void update_character(uint8_t index, char ascii, bool dp);
     void update_display();

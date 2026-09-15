@@ -118,6 +118,12 @@ with space-separated arguments, and the receive buffer is 32 bytes
 | `ST` | Unix timestamp | `OK` | sets the RTC |
 | `GO` | — | offset in hours | signed integer, defaults to `-6` |
 | `SO` | offset in hours | `OK` | signed integer |
+| `GM` | — | `12` or `24` | display hour format |
+| `SM` | `12` or `24` | `OK` | display only; the RTC always runs in 24-hour format |
+| `GA` | — | `hh mm armed` | alarm time and whether it is armed (`0`/`1`) |
+| `SA` | `hh` `mm` | `OK` | 0–23 and 0–59; out of range is rejected and changes nothing |
+| `AE` | `0` or `1` | `OK` | arm or disarm; `AE 0` also silences a firing alarm |
+| `GL` | — | `top mid bot` | current LED pin states, for checking the indicators from a host |
 
 An unrecognized command replies `Unrecognized command [<cmd>]`.
 
@@ -200,6 +206,54 @@ and `hardware/stm32-shift-display.kicad_sch` are the authority; this table is a 
 The rev 2 remap put the LED and `OE` pins on PWM-capable outputs specifically to
 allow brightness control. That is not implemented yet — see below.
 
+### LEDs
+
+The firmware's positional names run **opposite** to the schematic's D-numbering, so
+cross-reference with care. All three are active high (cathodes to GND).
+
+| Firmware | Pin | Net | Schematic | Indicates |
+| --- | --- | --- | --- | --- |
+| `LED_TOP` | `PB8` | `/LED3` | **D3** | AM — lit before 12:00, and only in 12-hour mode |
+| `LED_MID` | `PB7` | `/LED2` | **D2** | 12-hour mode is active |
+| `LED_BOT` | `PB6` | `/LED1` | **D1** | alarm armed (steady) or firing (blinking) |
+
+`GL` reports all three pin states over serial, which is usually faster than reading
+them off the board.
+
+### Menu
+
+Click **SET** from the clock to open the menu. **PLUS**/**MINUS** scroll and wrap;
+**SET** enters an entry; **holding SET** backs out one level without saving. Ten
+seconds without a press returns to the clock, discarding anything uncommitted.
+
+| Entry | Shown | Fields |
+| --- | --- | --- |
+| Clock | `CLOC` | hours, minutes, seconds |
+| Date | `DAtE` | day, month, year |
+| Hour format | `12-24` | `12Hr` / `24Hr` |
+| Alarm | `ALArn` | hour, minute, `On`/`OFF` |
+
+Inside an editor the field being edited blinks. PLUS/MINUS adjust it and wrap at the
+field's limits; holding either repeats. SET advances to the next field and commits
+after the last, returning to the clock.
+
+A firing alarm flashes the whole display and blinks D1 until any button is pressed —
+or until `AE 0` disarms it from a host.
+
+### Settings storage
+
+12/24-hour mode, the alarm time, and the armed flag live in backup-domain registers
+on VBAT, so they survive a power cut exactly as the time does. **DR2, DR3 and DR5**
+are used; a magic value in DR2 distinguishes configured backup memory from a fresh
+coin cell.
+
+Most of the backup domain is already claimed and must not be reused: the core takes
+**DR1** (`RTC_BKP_INDEX`), **DR4** (`HID_MAGIC_NUMBER_BKP_INDEX`) and **DR10** in
+`backup.h`, and STM32RTC stores the F1's emulated date across **DR6 and DR7**
+(`RTC_BKP_DATE`). Writing the date registers would surface as a clock bug rather than
+a settings bug. Access goes through the core's `getBackupRegister`/`setBackupRegister`
+from `backup.h`; STM32RTC's own helpers are internal to `rtc.c`.
+
 ## Hardware files
 
 `hardware/` is in **KiCad 8** format: the schematic is `version 20231120` and the
@@ -233,9 +287,6 @@ so that "the unchanged firmware still builds and flashes" stayed a usable signal
 - **Month off by one over the wire.** `cmd_set_time()` passes `tm_mon` (0–11) straight
   to `rtc.setMonth()` (1–12), and `cmd_get_time()` reads it back without the inverse
   correction. `ST` followed by `GT` does not round-trip the date.
-- **`setup_rtc()` tests the wrong variables.** Its epoch check reads the uninitialized
-  globals `day`, `month`, and `year` instead of the `date_time_buf` fields it just
-  populated from the RTC.
 - **`timesync.py` writes the clock without `-U`.** The guard is
   `abs(skew) > 1 & args.update`, which binds as `abs(skew) > (1 & args.update)`. With
   `-U` absent that is `abs(skew) > 0`, so any nonzero skew triggers a write. Running
@@ -248,15 +299,9 @@ so that "the unchanged firmware still builds and flashes" stayed a usable signal
 
 ## Unimplemented
 
-- **The menu.** `lib/ShiftDisplayFSM` has only `IDLE` and `MENU` states. The
-  `MenuState` enum lays out the intended tree, but `currentMenuState` is never
-  advanced and the `MENU_UP`/`MENU_DOWN` actions are empty. `main.cpp`'s `MENU` branch
-  only draws `printSetHourMenu()` and watches for a click to exit.
 - **Brightness.** The `OE` line is on a PWM-capable pin and `irq_timer_led()` exists to
   toggle it, but the `HardwareTimer` setup in `setup_user_leds()` is commented out and
   nothing calls the ISR.
-- **Long press and repeat.** Enabled in `ButtonConfig` but `handleEvent()` only handles
-  `kEventClicked`.
 - **`lib/ShiftClock`** is a standalone software clock, superseded by `STM32RTC` and
   referenced by nothing.
 
