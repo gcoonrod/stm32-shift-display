@@ -16,31 +16,81 @@
 #define GET_BIT(byte, bit) (((byte) >> (bit)) & 0x01)
 
 /**
- * Bit Position:  7   6   5   5   3   2   1   0
+ * Bit Position:  7   6   5   4   3   2   1   0
  * 595 Outputs:   QA  QB  QC  QD  QE  QF  QG  QH
  * 7 Segment LED: A   B   C   D   E   F   G   DP
  */
+
+// Shown for any character with no glyph, so an unrenderable character fails
+// visibly rather than as a blank.
+#define SEG_INVALID 0b10101000
+
+/**
+ * Glyph patterns indexed by ASCII code, offset by SEG_FIRST_CHAR. This table is
+ * the single source of truth for what the display can render: a character is
+ * renderable exactly when it has a non-zero entry here. The previous form kept a
+ * hand-written range check in map_ascii() alongside a densely packed table, so
+ * adding a glyph meant editing both in lockstep -- and a character present in one
+ * but missing from the other rendered as SEG_INVALID, which reads as a hardware
+ * fault rather than a typo.
+ *
+ * Space is deliberately handled before this lookup, since its pattern (all
+ * segments off) is indistinguishable from "no glyph defined".
+ *
+ * M and W are absent on purpose: neither renders legibly on seven segments, so
+ * labels are chosen from what the display can actually show.
+ */
+#define SEG_FIRST_CHAR ' '
+#define SEG_LAST_CHAR 'u'
+
 static const uint8_t segment_data[] = {
-    0b11111100, // '0'
-    0b01100000, // '1'
-    0b11011010, // '2'
-    0b11110010, // '3'
-    0b01100110, // '4'
-    0b10110110, // '5'
-    0b10111110, // '6'
-    0b11100000, // '7'
-    0b11111110, // '8'
-    0b11110110, // '9'
-    0b11101110, // 'A'
-    0b00011110, // 'B' (b)
-    0b10011101, // 'C'
-    0b01111010, // 'D' (d)
-    0b10011110, // 'E'
-    0b10001110, // 'F'
-    0b10111100, // 'G'
-    0b01101110, // 'H'
-    0b00000000, // ' ' (space)
-    
+    /* ' ' */ 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     /* ! " # $ % & ' ( ) * + , */
+    /* '-' */ 0b00000010,
+    0, 0,                                    /* . / */
+    /* '0' */ 0b11111100,
+    /* '1' */ 0b01100000,
+    /* '2' */ 0b11011010,
+    /* '3' */ 0b11110010,
+    /* '4' */ 0b01100110,
+    /* '5' */ 0b10110110,
+    /* '6' */ 0b10111110,
+    /* '7' */ 0b11100000,
+    /* '8' */ 0b11111110,
+    /* '9' */ 0b11110110,
+    0, 0, 0, 0, 0, 0, 0,                     /* : ; < = > ? @ */
+    /* 'A' */ 0b11101110,
+    /* 'B' */ 0b00011110,
+    /* 'C' */ 0b10011101,
+    /* 'D' */ 0b01111010,
+    /* 'E' */ 0b10011110,
+    /* 'F' */ 0b10001110,
+    /* 'G' */ 0b10111100,
+    /* 'H' */ 0b01101110,
+    0, 0, 0,                                 /* I J K */
+    /* 'L' */ 0b00011100,
+    0,                                       /* M -- not renderable */
+    /* 'N' */ 0b00101010,                    /* rendered as lowercase n */
+    /* 'O' */ 0b00111010,                    /* rendered as lowercase o */
+    /* 'P' */ 0b11001110,
+    0,                                       /* Q */
+    /* 'R' */ 0b00001010,                    /* rendered as lowercase r */
+    0,                                       /* S -- use 5 */
+    /* 'T' */ 0b00011110,                    /* rendered as lowercase t */
+    /* 'U' */ 0b01111100,
+    0, 0, 0, 0, 0,                           /* V W X Y Z */
+    0, 0, 0, 0, 0, 0,                        /* [ \ ] ^ _ ` */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,         /* a b c d e f g h i j k */
+    /* 'l' */ 0b00011100,
+    0,                                       /* m */
+    /* 'n' */ 0b00101010,
+    /* 'o' */ 0b00111010,
+    /* 'p' */ 0b11001110,
+    0,                                       /* q */
+    /* 'r' */ 0b00001010,
+    0,                                       /* s */
+    /* 't' */ 0b00011110,
+    /* 'u' */ 0b01111100,
 };
 
 ShiftDisplay::ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t rclk, uint16_t oe)
@@ -123,24 +173,22 @@ void ShiftDisplay::update()
     update_display();
 }
 
-uint8_t ShiftDisplay::map_ascii(char hex_char)
+uint8_t ShiftDisplay::map_ascii(char ascii)
 {
-    // Error checking: ensure input is a valid hexadecimal character
-    if (!((hex_char >= '0' && hex_char <= '9') || (hex_char >= 'A' && hex_char <= 'H') || (hex_char == ' ')))
-    {
-        return 0b10101000; // Indicate invalid character with 3 horizontal bars
-    }
-
-    if (hex_char == ' ')
+    if (ascii == ' ')
     {
         return 0;
     }
 
-    // Convert character to index (subtract ASCII offset)
-    uint8_t index = (hex_char <= '9') ? (hex_char - '0') : (hex_char - 'A' + 10);
+    if (ascii < SEG_FIRST_CHAR || ascii > SEG_LAST_CHAR)
+    {
+        return SEG_INVALID;
+    }
 
-    // Return the corresponding seven-segment pattern
-    return segment_data[index];
+    uint8_t pattern = segment_data[ascii - SEG_FIRST_CHAR];
+
+    // A zero entry means no glyph is defined for this character.
+    return pattern ? pattern : SEG_INVALID;
 }
 
 void ShiftDisplay::shiftOutByte(uint8_t byte, bool dp)
