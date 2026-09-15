@@ -64,6 +64,8 @@ void cmd_get_alarm(SerialCommands *sender);
 void cmd_set_alarm(SerialCommands *sender);
 void cmd_alarm_enable(SerialCommands *sender);
 void cmd_get_leds(SerialCommands *sender);
+void cmd_get_bright(SerialCommands *sender);
+void cmd_set_bright(SerialCommands *sender);
 
 SerialCommand cmd_test_("TEST", cmd_test);
 SerialCommand cmd_set_time_("ST", cmd_set_time);
@@ -76,6 +78,8 @@ SerialCommand cmd_get_alarm_("GA", cmd_get_alarm);
 SerialCommand cmd_set_alarm_("SA", cmd_set_alarm);
 SerialCommand cmd_alarm_enable_("AE", cmd_alarm_enable);
 SerialCommand cmd_get_leds_("GL", cmd_get_leds);
+SerialCommand cmd_get_bright_("GI", cmd_get_bright);
+SerialCommand cmd_set_bright_("SI", cmd_set_bright);
 
 STM32RTC &rtc = STM32RTC::getInstance();
 DateTimeBuffer_t date_time_buf = {0, 1, RTC_MONTH_JANUARY, 1, 0, 0, 0};
@@ -95,6 +99,10 @@ int8_t timezoneOffset = -6; // CST
 #define BKP_MAGIC_REG LL_RTC_BKP_DR2
 #define BKP_FLAGS_REG LL_RTC_BKP_DR3
 #define BKP_ALARM_REG LL_RTC_BKP_DR5
+/* Low byte: indicator level. The high byte is deliberately left alone for
+   display-dimming to take, so both brightness levels share one register and
+   neither change needs a migration. */
+#define BKP_BRIGHT_REG LL_RTC_BKP_DR8
 #define BKP_MAGIC_VALUE 0xC10CU
 
 #define FLAG_MODE_12 0x1U
@@ -106,9 +114,10 @@ typedef struct
   bool alarmArmed;
   uint8_t alarmHour;
   uint8_t alarmMinute;
+  uint8_t indicatorLevel; // index into led_gamma
 } Settings_t;
 
-Settings_t settings = {false, false, 7, 0};
+Settings_t settings = {false, false, 7, 0, 4};
 
 // SET gets its own config; see setup_user_btns() for why it must not share
 // the repeat-press feature with PLUS/MINUS.
@@ -128,7 +137,6 @@ MenuState edit_item = MENU_NONE;
 
 volatile bool alarm_fire_request = false;
 
-HardwareTimer *AlrmLEDTim;
 bool output_en = false;
 
 uint32_t last_activity_ms = 0;
@@ -138,6 +146,30 @@ char last_rendered[7] = {0};
 uint8_t last_rendered_dp = 0xFF;
 
 #define BLINK_PERIOD_MS 300
+#define BREATH_PERIOD_MS 2500
+
+/**
+ * Indicators run at 12-bit PWM, not the core's 8-bit default. Eight bits is
+ * plenty for steady indicators but not for fading between them: at the dim end
+ * a single duty step is a large fraction of the light output -- duty 4 to 5 is a
+ * 25% jump -- so a breath built on 256 steps visibly staircases however fast it
+ * is updated. 4096 steps put those jumps below the threshold where the eye
+ * separates them. MAX_PWM_RESOLUTION is 16, so this is well inside what the
+ * core supports.
+ */
+#define LED_PWM_BITS 12
+#define LED_MAX_DUTY 4095
+
+/**
+ * Indicator brightness levels, mapped to duty on a gamma curve. Luminous output
+ * is linear in duty but perceived lightness is not -- roughly luminance^(1/2.2) --
+ * so evenly spaced duty values feel bunched at the bottom and flat at the top.
+ * A table beats pow() on a core with no FPU, and at eight entries it costs eight
+ * bytes. The lowest entry is floored above the curve's own value so the dimmest
+ * setting stays visible rather than reading as a failed LED.
+ */
+#define LED_LEVELS 8
+static const uint16_t led_gamma[LED_LEVELS] = {64, 194, 473, 891, 1456, 2175, 3053, 4095};
 #define MENU_TIMEOUT_MS 10000
 
 // Function definitions
@@ -190,6 +222,8 @@ void setup()
   serial_commands_.AddCommand(&cmd_set_alarm_);
   serial_commands_.AddCommand(&cmd_alarm_enable_);
   serial_commands_.AddCommand(&cmd_get_leds_);
+  serial_commands_.AddCommand(&cmd_get_bright_);
+  serial_commands_.AddCommand(&cmd_set_bright_);
 
   last_activity_ms = millis();
 
@@ -239,21 +273,102 @@ void loop()
   btnMinusState = ButtonState::UNCHANGED;
 }
 
+/**
+ * The indicators are PWM-driven, not switched. PB6/PB7/PB8 are TIM4_CH1/CH2/CH3,
+ * which analogWrite() resolves through PinMap_TIM without this code naming the
+ * timer; the core's defaults are 8-bit duty at 1 kHz.
+ *
+ * Every write to these pins goes through set_led() and nowhere else. A stray
+ * digitalWrite would reconfigure its pin back to plain output and silently stop
+ * the timer driving it.
+ */
+// Last duty written to each indicator, in LED_TOP, LED_MID, LED_BOT order.
+// Cached because analogWrite() reconfigures the timer channel on every call,
+// which is far too heavy to repeat once per loop for three pins -- and read
+// back by GL, since digitalRead() on a PWM'd pin samples the live waveform.
+static uint16_t led_duty[3] = {0, 0, 0};
+
+static void apply_leds(uint16_t top, uint16_t mid, uint16_t bot)
+{
+  if (top != led_duty[0])
+  {
+    led_duty[0] = top;
+    analogWrite(LED_TOP, top);
+  }
+  if (mid != led_duty[1])
+  {
+    led_duty[1] = mid;
+    analogWrite(LED_MID, mid);
+  }
+  if (bot != led_duty[2])
+  {
+    led_duty[2] = bot;
+    analogWrite(LED_BOT, bot);
+  }
+}
+
+/**
+ * A smooth fade up and down, scaled so the peak is the configured brightness
+ * rather than full duty -- an alarm that overrode a deliberately dim setting
+ * would do so at exactly the hour that choice was made for. The trough stays
+ * above zero so a glance mid-breath never reads as "not armed".
+ */
+static uint16_t breath_duty(uint16_t peak)
+{
+  // The triangle runs over 0..1023 rather than the full 12-bit range: the
+  // smoothstep below squares it, and 4095 would overflow 32 bits.
+  const uint32_t SPAN = 1023U;
+  uint32_t half = BREATH_PERIOD_MS / 2;
+  uint32_t phase = millis() % BREATH_PERIOD_MS;
+  uint32_t tri = (phase < half) ? (phase * SPAN / half)
+                                : ((BREATH_PERIOD_MS - phase) * SPAN / half);
+  if (tri > SPAN)
+  {
+    tri = SPAN;
+  }
+
+  // smoothstep, t^2 * (3 - 2t), so the fade eases in and out rather than
+  // reversing sharply at the extremes.
+  uint32_t smooth = tri * tri * (3U * SPAN - 2U * tri) / (SPAN * SPAN);
+
+  // Then gamma-shape it. The levels are already gamma-mapped, but the breath
+  // interpolates between them and needs the same correction for the same
+  // reason: equal steps of duty are not equal steps of apparent brightness, so
+  // a linear fade appears to race through the dim end and crawl at the top.
+  uint32_t shaped = smooth * smooth / SPAN;
+
+  uint16_t trough = peak / 8;
+  if (trough == 0)
+  {
+    trough = 1;
+  }
+  if (peak <= trough)
+  {
+    return peak;
+  }
+
+  return trough + (uint16_t)(((uint32_t)(peak - trough) * shaped) / SPAN);
+}
+
+// The level in force right now: an editor in progress previews its value so the
+// choice is made by eye, and backing out restores the committed setting because
+// this falls straight back to it.
+static uint8_t effective_indicator_level()
+{
+  if (stateMachine.getState() == State::EDIT && edit_item == MENU_BRIGHT)
+  {
+    return (edit_field[0] < LED_LEVELS) ? edit_field[0] : (LED_LEVELS - 1);
+  }
+  return (settings.indicatorLevel < LED_LEVELS) ? settings.indicatorLevel
+                                                : (LED_LEVELS - 1);
+}
+
 void setup_user_leds()
 {
-  pinMode(LED_TOP, OUTPUT);
-  pinMode(LED_MID, OUTPUT);
-  pinMode(LED_BOT, OUTPUT);
-
-  digitalWrite(LED_TOP, LOW);
-  digitalWrite(LED_MID, LOW);
-  digitalWrite(LED_BOT, LOW);
-
-  // Alarm LED PWM
-  // TIM_TypeDef *botInstance = (TIM_TypeDef *)pinmap_peripheral(digitalPinToPinName(LED_BOT), PinMap_PWM);
-  // uint32_t botChannel = STM_PIN_CHANNEL(pinmap_function(digitalPinToPinName(LED_BOT), PinMap_PWM));
-  // AlrmLEDTim = new HardwareTimer(botInstance);
-  // AlrmLEDTim->setPWM(botChannel, LED_BOT, 60, 10);
+  analogWriteResolution(LED_PWM_BITS);
+  analogWrite(LED_TOP, 0);
+  analogWrite(LED_MID, 0);
+  analogWrite(LED_BOT, 0);
 }
 
 void setup_user_btns()
@@ -343,6 +458,12 @@ void settings_load()
   settings.alarmHour = (alarm >> 8) & 0xFF;
   settings.alarmMinute = alarm & 0xFF;
 
+  settings.indicatorLevel = getBackupRegister(BKP_BRIGHT_REG) & 0xFF;
+  if (settings.indicatorLevel >= LED_LEVELS)
+  {
+    settings.indicatorLevel = LED_LEVELS / 2;
+  }
+
   if (settings.alarmHour > 23)
   {
     settings.alarmHour = 0;
@@ -369,6 +490,11 @@ void settings_save()
 
   setBackupRegister(BKP_FLAGS_REG, flags);
   setBackupRegister(BKP_ALARM_REG, ((uint32_t)settings.alarmHour << 8) | settings.alarmMinute);
+
+  // Read-modify-write: the high byte belongs to display-dimming.
+  uint32_t bright = getBackupRegister(BKP_BRIGHT_REG) & 0xFF00U;
+  setBackupRegister(BKP_BRIGHT_REG, bright | settings.indicatorLevel);
+
   setBackupRegister(BKP_MAGIC_REG, BKP_MAGIC_VALUE);
 }
 
@@ -387,14 +513,21 @@ static uint8_t display_hours(uint8_t hours24)
 
 void update_leds()
 {
-  bool am = settings.mode12 && (date_time_buf.hours < 12);
-  digitalWrite(LED_TOP, am ? HIGH : LOW);
-  digitalWrite(LED_MID, settings.mode12 ? HIGH : LOW);
+  uint16_t peak = led_gamma[effective_indicator_level()];
 
-  bool alarmLed = (stateMachine.getState() == State::FIRING)
-                      ? blink_on()
-                      : settings.alarmArmed;
-  digitalWrite(LED_BOT, alarmLed ? HIGH : LOW);
+  bool am = settings.mode12 && (date_time_buf.hours < 12);
+  uint16_t bot;
+
+  if (stateMachine.getState() == State::FIRING)
+  {
+    bot = breath_duty(peak);
+  }
+  else
+  {
+    bot = settings.alarmArmed ? peak : 0;
+  }
+
+  apply_leds(am ? peak : 0, settings.mode12 ? peak : 0, bot);
 }
 
 // Write a two-digit value at pos, or blank it out when it should be hidden.
@@ -428,6 +561,9 @@ static void render_menu(char *buf)
     break;
   case MENU_ALARM:
     label = " ALArn";
+    break;
+  case MENU_BRIGHT:
+    label = " LEd  ";
     break;
   default:
     label = "      ";
@@ -474,6 +610,12 @@ static void render_edit(char *buf)
     {
       memcpy(buf, edit_field[2] ? "    On" : "   OFF", 6);
     }
+    break;
+
+  case MENU_BRIGHT:
+    // Levels read 1..8 rather than 0..7; the indicators themselves are the preview.
+    memcpy(buf, "LEd   ", 6);
+    put2(buf, 4, edit_field[0] + 1, show);
     break;
 
   default:
@@ -563,6 +705,10 @@ void begin_edit()
     edit_field[2] = settings.alarmArmed ? 1 : 0;
     break;
 
+  case MENU_BRIGHT:
+    edit_field[0] = settings.indicatorLevel;
+    break;
+
   default:
     break;
   }
@@ -614,6 +760,10 @@ static void field_limits(uint8_t field, uint8_t *lo, uint8_t *hi)
     {
       *hi = 1;
     }
+    break;
+
+  case MENU_BRIGHT:
+    *hi = LED_LEVELS - 1;
     break;
 
   default:
@@ -680,6 +830,11 @@ void commit_edit()
     settings.alarmHour = edit_field[0];
     settings.alarmMinute = edit_field[1];
     settings.alarmArmed = (edit_field[2] != 0);
+    settings_save();
+    break;
+
+  case MENU_BRIGHT:
+    settings.indicatorLevel = edit_field[0];
     settings_save();
     break;
 
@@ -1107,10 +1262,36 @@ void cmd_alarm_enable(SerialCommands *sender)
 
 void cmd_get_leds(SerialCommands *sender)
 {
-  // "<top> <mid> <bot>" -- lets the indicators be checked from the host
-  // instead of only by eye.
+  // "<top> <mid> <bot>" as duty values, 0-255. Lit means non-zero. Reporting
+  // duty rather than a logical level keeps a breathing alarm observable from a
+  // host, and digitalRead() is no longer meaningful here anyway: on a pin the
+  // timer is driving it samples the live PWM waveform at an arbitrary phase.
   sender->GetSerial()->printf("%d %d %d\r\n",
-                              digitalRead(LED_TOP) == HIGH ? 1 : 0,
-                              digitalRead(LED_MID) == HIGH ? 1 : 0,
-                              digitalRead(LED_BOT) == HIGH ? 1 : 0);
+                              led_duty[0], led_duty[1], led_duty[2]);
+}
+
+void cmd_get_bright(SerialCommands *sender)
+{
+  sender->GetSerial()->println(settings.indicatorLevel + 1);
+}
+
+void cmd_set_bright(SerialCommands *sender)
+{
+  char *level_str = sender->Next();
+  if (level_str == NULL)
+  {
+    sender->GetSerial()->println("ERROR NO_LEVEL");
+    return;
+  }
+
+  int level = atoi(level_str);
+  if (level < 1 || level > LED_LEVELS)
+  {
+    sender->GetSerial()->printf("ERROR LEVEL OUT OF RANGE {%d}: %s", level, level_str);
+    return;
+  }
+
+  settings.indicatorLevel = level - 1;
+  settings_save();
+  sender->GetSerial()->println("OK");
 }

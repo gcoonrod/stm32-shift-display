@@ -24,11 +24,12 @@ enum MenuState {
     MENU_TIME,
     MENU_DATE,
     MENU_MODE,
-    MENU_ALARM
+    MENU_ALARM,
+    MENU_BRIGHT
 };
 
 #define MENU_FIRST MENU_TIME
-#define MENU_LAST MENU_ALARM
+#define MENU_LAST MENU_BRIGHT
 
 enum Action {
     ACTION_NONE,

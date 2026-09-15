@@ -123,7 +123,9 @@ with space-separated arguments, and the receive buffer is 32 bytes
 | `GA` | — | `hh mm armed` | alarm time and whether it is armed (`0`/`1`) |
 | `SA` | `hh` `mm` | `OK` | 0–23 and 0–59; out of range is rejected and changes nothing |
 | `AE` | `0` or `1` | `OK` | arm or disarm; `AE 0` also silences a firing alarm |
-| `GL` | — | `top mid bot` | current LED pin states, for checking the indicators from a host |
+| `GL` | — | `top mid bot` | indicator **duty**, 0–4095 each (12-bit); lit means non-zero |
+| `GI` | — | `1`–`8` | indicator brightness level |
+| `SI` | `1`–`8` | `OK` | indicator brightness; out of range is rejected and changes nothing |
 
 An unrecognized command replies `Unrecognized command [<cmd>]`.
 
@@ -215,10 +217,26 @@ cross-reference with care. All three are active high (cathodes to GND).
 | --- | --- | --- | --- | --- |
 | `LED_TOP` | `PB8` | `/LED3` | **D3** | AM — lit before 12:00, and only in 12-hour mode |
 | `LED_MID` | `PB7` | `/LED2` | **D2** | 12-hour mode is active |
-| `LED_BOT` | `PB6` | `/LED1` | **D1** | alarm armed (steady) or firing (blinking) |
+| `LED_BOT` | `PB6` | `/LED1` | **D1** | alarm armed (steady) or firing (breathing) |
 
-`GL` reports all three pin states over serial, which is usually faster than reading
-them off the board.
+The indicators are PWM-driven, not switched: PB6/PB7/PB8 are TIM4_CH1/CH2/CH3, reached
+through `analogWrite()` at **12-bit** resolution (`analogWriteResolution(12)`) rather than
+the core's 8-bit default. Eight bits is plenty for steady indicators but not for fading
+between them — at the dim end one duty step is a large fraction of the light, so a breath
+built on 256 steps visibly staircases no matter how fast it updates. "Lit" therefore means a duty,
+set by the brightness level and mapped through a gamma curve so the eight levels feel
+evenly spaced. A firing alarm breathes rather than blinking, peaking at the configured
+brightness rather than overriding it.
+
+Every write to those pins goes through one path. A stray `digitalWrite` would reconfigure
+its pin back to plain output and silently stop the timer driving it.
+
+`GL` reports the duty of all three over serial, which is both faster than reading them off
+the board and the only reliable way to do it — `digitalRead()` on a pin the timer is
+driving samples the live PWM waveform at an arbitrary phase.
+
+Note that the generic variant defines `TIMER_SERVO TIM4`. That only matters if the Servo
+library is ever used; nothing here touches a timer otherwise.
 
 ### Menu
 
@@ -232,6 +250,7 @@ seconds without a press returns to the clock, discarding anything uncommitted.
 | Date | `DAtE` | day, month, year |
 | Hour format | `12-24` | `12Hr` / `24Hr` |
 | Alarm | `ALArn` | hour, minute, `On`/`OFF` |
+| Indicator brightness | `LEd` | level 1–8, previewed live on the LEDs |
 
 Inside an editor the field being edited blinks. PLUS/MINUS adjust it and wrap at the
 field's limits; holding either repeats. SET advances to the next field and commits
@@ -242,10 +261,11 @@ or until `AE 0` disarms it from a host.
 
 ### Settings storage
 
-12/24-hour mode, the alarm time, and the armed flag live in backup-domain registers
-on VBAT, so they survive a power cut exactly as the time does. **DR2, DR3 and DR5**
-are used; a magic value in DR2 distinguishes configured backup memory from a fresh
-coin cell.
+12/24-hour mode, the alarm time, the armed flag and the indicator brightness live in
+backup-domain registers on VBAT, so they survive a power cut exactly as the time does.
+**DR2, DR3, DR5 and DR8** are used; a magic value in DR2 distinguishes configured backup
+memory from a fresh coin cell. Only the low byte of DR8 is taken — the high byte is left
+for display brightness, so both levels share one register.
 
 Most of the backup domain is already claimed and must not be reused: the core takes
 **DR1** (`RTC_BKP_INDEX`), **DR4** (`HID_MAGIC_NUMBER_BKP_INDEX`) and **DR10** in

@@ -74,9 +74,14 @@ repeat into `btnSetState`/`btnPlusState`/`btnMinusState`, which the loop consume
 pass. `kFeatureDoubleClick` is deliberately off (it delays every click);
 `kFeatureSuppressAfterLongPress` is on so backing out of a level doesn't also emit a click.
 
-**Settings** persist in backup registers DR2/DR3/DR5. DR1, DR4 and DR10 belong to the core and
-DR6/DR7 hold the RTC library's emulated date — writing those corrupts the clock. See
-`docs/DEVELOPMENT.md`.
+**LEDs** are PWM, not on/off — PB6/PB7/PB8 are TIM4_CH1/CH2/CH3 via `analogWrite`, at a
+gamma-mapped brightness level. All three are written through one path; a stray
+`digitalWrite` reconfigures the pin away from its timer and stops it. `digitalRead` on them
+is meaningless, so `GL` reports cached duty instead.
+
+**Settings** persist in backup registers DR2/DR3/DR5/DR8. DR1, DR4 and DR10 belong to the
+core and DR6/DR7 hold the RTC library's emulated date — writing those corrupts the clock.
+See `docs/DEVELOPMENT.md`.
 
 **`lib/ShiftClock` is dead code** — a standalone software clock superseded by `STM32RTC`. Don't
 extend it without deciding it's actually the path forward.
