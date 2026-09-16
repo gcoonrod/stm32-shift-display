@@ -101,6 +101,7 @@ void cmd_wave_engine(SerialCommands *sender);
 void cmd_wave_block(SerialCommands *sender);
 void cmd_wave_reset(SerialCommands *sender);
 void cmd_wave_tear(SerialCommands *sender);
+void cmd_wave_fade(SerialCommands *sender);
 #endif
 void cmd_set_disp(SerialCommands *sender);
 
@@ -138,6 +139,7 @@ SerialCommand cmd_wave_engine_("WE", cmd_wave_engine);
 SerialCommand cmd_wave_block_("WB", cmd_wave_block);
 SerialCommand cmd_wave_reset_("WX", cmd_wave_reset);
 SerialCommand cmd_wave_tear_("WT", cmd_wave_tear);
+SerialCommand cmd_wave_fade_("WF", cmd_wave_fade);
 #endif
 
 STM32RTC &rtc = STM32RTC::getInstance();
@@ -311,6 +313,129 @@ static inline void display_write(const char *buf, uint8_t dp)
   display.latch();
 }
 
+/**
+ * The menu-exit fade.
+ *
+ * Leaving the menu, the six positions come up one at a time from the left
+ * rather than the time snapping back all at once. Position p starts at
+ * p x FADE_STAGGER_MS and ramps to full over FADE_RAMP_MS.
+ *
+ *   pos 0  ####----
+ *   pos 1    ####----
+ *   pos 2      ####----      STAGGER 110 ms, RAMP 260 ms, total 810 ms
+ *   pos 3        ####----
+ *   pos 4          ####----
+ *   pos 5            ####----
+ *
+ * Those timings were chosen by eye from five candidates spanning 320 to 810 ms,
+ * and the choice says something about the quantisation worry. The design expected
+ * eight linear levels to be coarse -- the step from unlit to one slice is about
+ * 39% of the perceptual range -- and expected speed to be what hid it, making a
+ * slower fade the riskier one. The slowest candidate was preferred. So the
+ * stepping is not the binding constraint at this size and brightness, and none of
+ * the ranked remedies (ramping global ~OE underneath, then N = 16, then temporal
+ * dither) has turned out to be needed.
+ *
+ * Driven from elapsed time rather than by counting steps, so a slow pass through
+ * the loop skips levels and still finishes on schedule instead of stretching.
+ *
+ * It changes brightness only. Content is never recomputed or re-shifted for it:
+ * per-digit levels are independent of the character buffer, which is what lets
+ * this sit beside update_leds() rather than inside render(), leaving the
+ * time_dirty path exactly as cheap as it was.
+ */
+#define FADE_STAGGER_MS 110UL
+#define FADE_RAMP_MS 260UL
+
+#ifdef SHIFT_ENGINE_VERIFY
+/* Tunable at runtime while the timings are being chosen by eye. Reflashing per
+   combination makes comparing two of them useless: by the time the second is
+   running, the first is a memory. Production uses the constants. */
+static uint32_t fade_stagger_ms = FADE_STAGGER_MS;
+static uint32_t fade_ramp_ms = FADE_RAMP_MS;
+#define FADE_STAGGER fade_stagger_ms
+#define FADE_RAMP fade_ramp_ms
+#else
+#define FADE_STAGGER FADE_STAGGER_MS
+#define FADE_RAMP FADE_RAMP_MS
+#endif
+
+#define FADE_TOTAL_MS (5UL * FADE_STAGGER + FADE_RAMP)
+
+static uint32_t fade_start_ms = 0;
+static bool fade_active = false;
+
+static void fade_begin()
+{
+  // Per-digit brightness only exists while the engine refreshes. Without it the
+  // levels are inert, so there is nothing to fade.
+  if (!display.engineRunning())
+  {
+    return;
+  }
+
+  fade_start_ms = millis();
+  fade_active = true;
+}
+
+/**
+ * Abandon the fade and put every position back to full.
+ *
+ * Never reverses or pauses: anything interrupting the fade wants the display
+ * readable now. Leaving a digit part-way would show as a fault rather than a
+ * flourish, and entering the menu with half-dim digits is the specific outcome
+ * this prevents.
+ */
+static void fade_abort()
+{
+  if (!fade_active)
+  {
+    return;
+  }
+
+  fade_active = false;
+  display.setAllDigitLevels(ShiftDisplay::maxDigitLevel());
+}
+
+static void update_display_fade()
+{
+  if (!fade_active)
+  {
+    return;
+  }
+
+  const uint8_t full = ShiftDisplay::maxDigitLevel();
+  uint32_t elapsed = millis() - fade_start_ms;
+
+  if (elapsed >= FADE_TOTAL_MS)
+  {
+    fade_active = false;
+    display.setAllDigitLevels(full);
+    return;
+  }
+
+  uint8_t levels[6];
+
+  for (uint8_t p = 0; p < 6; p++)
+  {
+    uint32_t begins = (uint32_t)p * FADE_STAGGER;
+
+    if (elapsed <= begins)
+    {
+      levels[p] = 0;
+    }
+    else
+    {
+      uint32_t into = elapsed - begins;
+      levels[p] = (into >= FADE_RAMP)
+                      ? full
+                      : (uint8_t)((into * full) / FADE_RAMP_MS);
+    }
+  }
+
+  display.setDigitLevels(levels);
+}
+
 static inline bool blink_on()
 {
   return ((millis() / BLINK_PERIOD_MS) % 2) == 0;
@@ -366,6 +491,7 @@ void setup()
   serial_commands_.AddCommand(&cmd_wave_block_);
   serial_commands_.AddCommand(&cmd_wave_reset_);
   serial_commands_.AddCommand(&cmd_wave_tear_);
+  serial_commands_.AddCommand(&cmd_wave_fade_);
 #endif
 
   last_activity_ms = millis();
@@ -400,7 +526,21 @@ void loop()
     stateMachine.execute(Action::MENU_TIMEOUT);
   }
 
+  /* The fade triggers on a transition, not a state. Backing out, committing an
+     editor and timing out all arrive at IDLE through this one update(), so all
+     three fade with no special-casing. FIRING -> IDLE deliberately does not:
+     dismissing an alarm is not a moment to wait half a second for the time. */
+  State state_before = stateMachine.getState();
+
   stateMachine.update();
+
+  State state_after = stateMachine.getState();
+
+  if (state_after == State::IDLE &&
+      (state_before == State::MENU || state_before == State::EDIT))
+  {
+    fade_begin();
+  }
 
   if (stateMachine.takeCommit())
   {
@@ -410,6 +550,19 @@ void loop()
   render();
   update_leds();
   update_display_brightness();
+
+  /* Anything that wants the display readable now ends the fade: a button, a
+     return to the menu, an alarm firing. */
+  if (fade_active &&
+      (stateMachine.getState() != State::IDLE ||
+       btnSetState != ButtonState::UNCHANGED ||
+       btnPlusState != ButtonState::UNCHANGED ||
+       btnMinusState != ButtonState::UNCHANGED))
+  {
+    fade_abort();
+  }
+
+  update_display_fade();
 
 #ifdef SHIFT_ENGINE_VERIFY
   /* Replay every slice back to back, continuously, exactly as the DMA engine
@@ -1784,6 +1937,39 @@ void cmd_wave_level(SerialCommands *sender)
  * be read. The worst available outcome is some digits from the old content and
  * some from the new, for one frame.
  */
+/* Run the fade without walking the menu, so it can be watched repeatedly while
+   the timings are tuned by eye. Production carries neither this nor the flag. */
+void cmd_wave_fade(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+
+  if (!display.engineRunning())
+  {
+    out->println("ERROR ENGINE_STOPPED");
+    return;
+  }
+
+  char *a = sender->Next();
+  if (a != NULL)
+  {
+    fade_stagger_ms = (uint32_t)atol(a);
+    char *b = sender->Next();
+    if (b != NULL)
+    {
+      fade_ramp_ms = (uint32_t)atol(b);
+    }
+  }
+
+  fade_begin();
+
+  out->print("fade stagger=");
+  out->print(FADE_STAGGER);
+  out->print(" ramp=");
+  out->print(FADE_RAMP);
+  out->print(" total=");
+  out->println(FADE_TOTAL_MS);
+}
+
 void cmd_wave_tear(SerialCommands *sender)
 {
   Stream *out = sender->GetSerial();

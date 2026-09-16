@@ -402,6 +402,33 @@ void ShiftDisplay::stopEngine()
     _engine_running = false;
 }
 
+void ShiftDisplay::setDigitLevels(const uint8_t *slices)
+{
+    if (slices == nullptr)
+    {
+        return;
+    }
+
+    bool changed = false;
+
+    for (uint8_t i = 0; i < _char_buffer_size; i++)
+    {
+        uint8_t level = (slices[i] > SHIFT_ENGINE_SLICES) ? SHIFT_ENGINE_SLICES : slices[i];
+        if (_digit_levels[i] != level)
+        {
+            _digit_levels[i] = level;
+            changed = true;
+        }
+    }
+
+    // Rebuilding costs ~186 us and is the window during which the DMA reads a
+    // buffer being rewritten. Not doing it when nothing moved is free.
+    if (changed)
+    {
+        build_waveform();
+    }
+}
+
 void ShiftDisplay::shiftSliceByHand(uint8_t slice)
 {
     if (!_initialized || !_engine_capable || slice >= SHIFT_ENGINE_SLICES)

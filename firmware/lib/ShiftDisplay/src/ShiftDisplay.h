@@ -167,6 +167,11 @@ public:
     void setDigitLevel(uint8_t index, uint8_t slices);
     uint8_t getDigitLevel(uint8_t index) const;
     void setAllDigitLevels(uint8_t slices);
+
+    // Set every position at once. One rebuild rather than six, which matters to
+    // the fade: it steps all six positions together, and six separate rebuilds
+    // would cost a millisecond of CPU per step to no purpose.
+    void setDigitLevels(const uint8_t *slices);
     static uint8_t maxDigitLevel() { return SHIFT_ENGINE_SLICES; }
 
     // False if the pin map puts data, clock and latch on different ports, in

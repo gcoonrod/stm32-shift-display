@@ -40,26 +40,26 @@
 ## 6. Per-digit brightness
 
 - [x] 6.1 Add a per-position slice count, defaulting to full, and render each slice according to it. *`_digit_levels[]`, seeded full in `begin()`; `build_waveform()` lights a digit in slices 0..level-1.*
-- [ ] 6.2 Confirm a single dimmed digit is visibly dimmer and still legible, with the others unaffected
-- [ ] 6.3 Confirm zero slices blanks a position and leaves the others alone
-- [ ] 6.4 Confirm equal slice counts on different positions look equally bright — this is the check that the slice/output-enable lock actually holds. **Must be done under the DMA engine, not the CPU replay.** Six digits at 4/8 already look uniform under replay, but that proves nothing about the lock: the replay free-runs, so its phase against `~OE` drifts and the error averages away. The engine is locked instead, and only a locked run tests locking
-- [ ] 6.5 Watch a dimmed digit for a spell at several global brightness levels, looking for beat or shimmer that is not commanded
-- [ ] 6.6 Confirm the global brightness setting still dims everything together and keeps the relative proportions, and that a digit at full relative brightness is no brighter than the global minimum allows
+- [x] 6.2 Confirm a single dimmed digit is visibly dimmer and still legible, with the others unaffected. *Confirmed under the engine.*
+- [x] 6.3 Confirm zero slices blanks a position and leaves the others alone. *Confirmed.*
+- [x] 6.4 Confirm equal slice counts on different positions look equally bright — the check that the slice/output-enable lock actually holds. **Done under the DMA engine, not the replay.** *Confirmed at 4/8, 2/8 and 6/8 — no position stood out. This is the design's central claim and the one thing that could not be established by reasoning: because the engine is phase-locked, a slice not spanning a whole `~OE` period would give each digit a fixed, non-averaging share of the on-time. 2/8 is the exposed case, a quarter of the digit's light.*
+- [x] 6.5 Watch a dimmed digit for a spell at several global brightness levels, looking for beat or shimmer that is not commanded. *Confirmed — one digit at 3/8 held 7 s at each of global 8, 6, 4, 2, 1. No beat.*
+- [x] 6.6 Confirm the global brightness setting still dims everything together and keeps the relative proportions, and that a digit at full relative brightness is no brighter than the global minimum allows. *Confirmed both ways.*
 
 ## 7. The menu-exit fade
 
-- [ ] 7.1 Add the transition detection: compare the state either side of `stateMachine.update()` and recognise `MENU`/`EDIT` → `IDLE`, so backing out, committing and timing out all trigger alike
-- [ ] 7.2 Confirm `FIRING` → `IDLE` does not trigger it — dismissing an alarm shows the time at once
-- [ ] 7.3 Add the fade stepper as its own call in the loop tail alongside `update_leds()`, driven from `millis()` against a start stamp rather than by counting steps
-- [ ] 7.4 Confirm `render()` is untouched and nothing is re-shifted for the fade; the `time_dirty` path must stay exactly as cheap as it is
-- [ ] 7.5 Wire the per-position ramp: position *p* starts at `p × STAGGER` and reaches full over `FADE`
+- [x] 7.1 Add the transition detection: compare the state either side of `stateMachine.update()` and recognise `MENU`/`EDIT` → `IDLE`, so backing out, committing and timing out all trigger alike.
+- [x] 7.2 Confirm `FIRING` → `IDLE` does not trigger it — dismissing an alarm shows the time at once. *Confirmed with a real alarm: levels held 8 8 8 8 8 8 through firing and dismissal.*
+- [x] 7.3 Add the fade stepper as its own call in the loop tail alongside `update_leds()`, driven from `millis()` against a start stamp rather than by counting steps.
+- [x] 7.4 Confirm `render()` is untouched and nothing is re-shifted for the fade; the `time_dirty` path must stay exactly as cheap as it is. *`render()` is unmodified. The fade moves per-digit levels, which are independent of the character buffer.*
+- [x] 7.5 Wire the per-position ramp: position *p* starts at `p × STAGGER` and reaches full over `FADE`.
 - [ ] 7.6 Add the abort: any button press, menu re-entry or alarm fire snaps every position to full immediately
-- [ ] 7.7 Add a build-flagged serial command to trigger the fade without walking the menu, so it can be watched repeatedly; confirm it is absent from the production image
-- [ ] 7.8 Watch the fade and judge whether 8 levels reads as a flourish or as steps. If it steps, work the remedies in the design's order — the global `~OE` ramp first, since it costs no RAM and buys more than more slices do — and record which was needed and why
-- [ ] 7.9 Confirm the fade ends at the configured brightness at every level including the minimum, and that a digit is never left dim by any exit path
-- [ ] 7.10 Confirm the blanked leading position stays blank throughout in 12-hour mode, and that the remaining digits keep their timing
-- [ ] 7.11 Hold the loop busy mid-fade and confirm the fade shortens rather than stretching
-- [ ] 7.12 Tune `STAGGER` and `FADE` by eye from the 70 ms / 180 ms starting point, and record the values chosen
+- [x] 7.7 Add a build-flagged serial command to trigger the fade without walking the menu, so it can be watched repeatedly; confirm it is absent from the production image. *`WF`, optionally taking stagger and ramp so the timings could be compared live rather than one reflash per candidate.*
+- [x] 7.8 Watch the fade and judge whether 8 levels reads as a flourish or as steps. If it steps, work the remedies in the design's order — the global `~OE` ramp first, since it costs no RAM and buys more than more slices do — and record which was needed and why. *It reads as a flourish. **No remedy was needed**, and the choice of timing is the evidence: of five candidates the slowest was preferred, where visible stepping would have made the slowest the worst.*
+- [x] 7.9 Confirm the fade ends at the configured brightness at every level including the minimum, and that a digit is never left dim by any exit path. *Confirmed at global 8, 5, 3 and 1; levels returned to full every time.*
+- [x] 7.10 Confirm the blanked leading position stays blank throughout in 12-hour mode, and that the remaining digits keep their timing. *Confirmed at 09:34 in 12-hour mode — the blank position keeps its slot in the rhythm and lights nothing.*
+- [x] 7.11 Hold the loop busy mid-fade and confirm the fade shortens rather than stretching. *Confirmed — fade triggered then the loop blocked 1 s; it completed on schedule rather than resuming where it left off.*
+- [x] 7.12 Tune `STAGGER` and `FADE` by eye from the 70 ms / 180 ms starting point, and record the values chosen. ***110 ms stagger / 260 ms ramp, 810 ms total***, chosen from five candidates spanning 320–810 ms.*
 
 ## 8. Verification
 
