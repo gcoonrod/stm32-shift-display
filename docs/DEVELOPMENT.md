@@ -126,6 +126,9 @@ with space-separated arguments, and the receive buffer is 32 bytes
 | `GL` | — | `top mid bot` | indicator **duty**, 0–4095 each (12-bit); lit means non-zero |
 | `GI` | — | `1`–`8` | indicator brightness level |
 | `SI` | `1`–`8` | `OK` | indicator brightness; out of range is rejected and changes nothing |
+| `GD` | — | `level duty` | display brightness level and its duty |
+| `SD` | `1`–`8` | `OK` | display brightness; out of range is rejected and changes nothing |
+| `GB` | — | see below | raw settings storage, for diagnosing settings loss |
 
 An unrecognized command replies `Unrecognized command [<cmd>]`.
 
@@ -238,6 +241,29 @@ driving samples the live PWM waveform at an arbitrary phase.
 Note that the generic variant defines `TIMER_SERVO TIM4`. That only matters if the Servo
 library is ever used; nothing here touches a timer otherwise.
 
+### Display brightness
+
+The shift registers' `~OE` line is PWM-driven from PA0 (TIM2_CH1), so brightness applies to
+all six digits at once — it is a single net across all six registers, which is also why
+per-digit dimming is not possible.
+
+`~OE` belongs to `ShiftDisplay`, which owns the pin and the **active-low inversion**: `~OE`
+high blanks the outputs, so the duty written to the pin is the complement of the
+brightness. `enable()` and `disable()` are brightness operations, not pin writes, and
+`enable()` restores the configured level rather than going to full. Nothing else may write
+PA0 — a `digitalWrite` would reconfigure it away from the timer and blank the display.
+
+`analogWrite`'s resolution and frequency are **global**, shared by the indicator LEDs on
+TIM4 and the display on TIM2. Both are set once in `setup()`: 12-bit at 4 kHz. 1 kHz would
+likely do, but a bright source at low duty seen at the edge of vision is where PWM flicker
+gets noticed. 4 kHz costs nothing — the timer reload is about 18,000 counts against 4,096
+duty steps, so resolution is untouched; it would only suffer above roughly 17 kHz.
+
+The alarm flash and the field-edit blink stay buffer-based rather than moving to `~OE`.
+The field blink has to blank one field and `~OE` is all-or-nothing, so moving only the
+alarm would leave two blanking mechanisms for one idea. `~OE` means brightness and nothing
+else.
+
 ### Menu
 
 Click **SET** from the clock to open the menu. **PLUS**/**MINUS** scroll and wrap;
@@ -251,6 +277,7 @@ seconds without a press returns to the clock, discarding anything uncommitted.
 | Hour format | `12-24` | `12Hr` / `24Hr` |
 | Alarm | `ALArn` | hour, minute, `On`/`OFF` |
 | Indicator brightness | `LEd` | level 1–8, previewed live on the LEDs |
+| Display brightness | `dISP` | level 1–8, previewed live on the display itself |
 
 Inside an editor the field being edited blinks. PLUS/MINUS adjust it and wrap at the
 field's limits; holding either repeats. SET advances to the next field and commits
@@ -259,13 +286,40 @@ after the last, returning to the clock.
 A firing alarm flashes the whole display and blinks D1 until any button is pressed —
 or until `AE 0` disarms it from a host.
 
+### Diagnosing settings loss
+
+`GB` reports the backup registers twice over:
+
+```
+boot:C10C 0003 032F 0206 now:C10C 0003 032F 0206 expect_magic:C10C
+      magic flags alarm bright
+```
+
+The `boot:` values are what `settings_load()` read at start-up, captured before anything
+could overwrite them; `now:` is what the registers hold at the time of the query.
+
+The distinction matters because the two ways settings can vanish look identical afterwards.
+If the backup domain failed to retain, `boot:` shows a bad magic and zeroed registers. If
+the firmware misread the magic and took the uninitialised branch, it rewrote defaults over
+good values — and every later boot then reads a *valid* magic with default contents, hiding
+the cause completely. Only the start-up capture separates them.
+
+It exists because settings were twice reported as returning to defaults without either
+instance reproducing. A controlled power cycle with distinctive values in all four settings,
+both cables out, preserved everything including the clock — so the cause is still unknown,
+and this is the instrument for catching it next time.
+
 ### Settings storage
 
 12/24-hour mode, the alarm time, the armed flag and the indicator brightness live in
 backup-domain registers on VBAT, so they survive a power cut exactly as the time does.
 **DR2, DR3, DR5 and DR8** are used; a magic value in DR2 distinguishes configured backup
-memory from a fresh coin cell. Only the low byte of DR8 is taken — the high byte is left
-for display brightness, so both levels share one register.
+memory from a fresh coin cell. DR8 holds both brightness levels: the indicator level in
+the low byte, stored as-is, and the display level in the high byte, stored **offset by
+one** so that zero means "never written". The low byte shipped first with the high byte
+zeroed, and storing the display level raw would make that indistinguishable from a
+deliberate level 0 — the dimmest — so devices already in the field would come up looking
+blank.
 
 Most of the backup domain is already claimed and must not be reused: the core takes
 **DR1** (`RTC_BKP_INDEX`), **DR4** (`HID_MAGIC_NUMBER_BKP_INDEX`) and **DR10** in

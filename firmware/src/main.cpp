@@ -66,6 +66,9 @@ void cmd_alarm_enable(SerialCommands *sender);
 void cmd_get_leds(SerialCommands *sender);
 void cmd_get_bright(SerialCommands *sender);
 void cmd_set_bright(SerialCommands *sender);
+void cmd_get_disp(SerialCommands *sender);
+void cmd_get_backup(SerialCommands *sender);
+void cmd_set_disp(SerialCommands *sender);
 
 SerialCommand cmd_test_("TEST", cmd_test);
 SerialCommand cmd_set_time_("ST", cmd_set_time);
@@ -80,6 +83,9 @@ SerialCommand cmd_alarm_enable_("AE", cmd_alarm_enable);
 SerialCommand cmd_get_leds_("GL", cmd_get_leds);
 SerialCommand cmd_get_bright_("GI", cmd_get_bright);
 SerialCommand cmd_set_bright_("SI", cmd_set_bright);
+SerialCommand cmd_get_disp_("GD", cmd_get_disp);
+SerialCommand cmd_set_disp_("SD", cmd_set_disp);
+SerialCommand cmd_get_backup_("GB", cmd_get_backup);
 
 STM32RTC &rtc = STM32RTC::getInstance();
 DateTimeBuffer_t date_time_buf = {0, 1, RTC_MONTH_JANUARY, 1, 0, 0, 0};
@@ -99,9 +105,14 @@ int8_t timezoneOffset = -6; // CST
 #define BKP_MAGIC_REG LL_RTC_BKP_DR2
 #define BKP_FLAGS_REG LL_RTC_BKP_DR3
 #define BKP_ALARM_REG LL_RTC_BKP_DR5
-/* Low byte: indicator level. The high byte is deliberately left alone for
-   display-dimming to take, so both brightness levels share one register and
-   neither change needs a migration. */
+/* Low byte: indicator level, stored as-is. High byte: display level, stored
+   offset by one so that zero means "never written".
+   
+   The low byte shipped first, and the high byte was left as zero. Storing the
+   display level raw would make that zero indistinguishable from a deliberate
+   level 0 -- the dimmest setting -- so every device already in the field would
+   come up looking blank on the first boot after this change. The offset costs a
+   byte of arithmetic and avoids resetting the settings that are already there. */
 #define BKP_BRIGHT_REG LL_RTC_BKP_DR8
 #define BKP_MAGIC_VALUE 0xC10CU
 
@@ -115,9 +126,10 @@ typedef struct
   uint8_t alarmHour;
   uint8_t alarmMinute;
   uint8_t indicatorLevel; // index into led_gamma
+  uint8_t displayLevel;   // index into disp_gamma
 } Settings_t;
 
-Settings_t settings = {false, false, 7, 0, 4};
+Settings_t settings = {false, false, 7, 0, 4, 5};
 
 // SET gets its own config; see setup_user_btns() for why it must not share
 // the repeat-press feature with PLUS/MINUS.
@@ -136,6 +148,16 @@ uint8_t edit_field[3] = {0, 0, 0};
 MenuState edit_item = MENU_NONE;
 
 volatile bool alarm_fire_request = false;
+
+// What the very first backup-register read returned at boot, captured before
+// anything can overwrite it. If settings_load() misreads the magic on a cold
+// start it rewrites defaults over the saved values, which destroys them
+// permanently -- this is how to tell that apart from the registers themselves
+// having been cleared.
+uint32_t boot_magic_seen = 0xFFFFFFFFU;
+uint32_t boot_flags_seen = 0xFFFFFFFFU;
+uint32_t boot_alarm_seen = 0xFFFFFFFFU;
+uint32_t boot_bright_seen = 0xFFFFFFFFU;
 
 bool output_en = false;
 
@@ -157,8 +179,14 @@ uint8_t last_rendered_dp = 0xFF;
  * separates them. MAX_PWM_RESOLUTION is 16, so this is well inside what the
  * core supports.
  */
-#define LED_PWM_BITS 12
-#define LED_MAX_DUTY 4095
+#define PWM_BITS 12
+#define PWM_MAX_DUTY 4095
+/* 1 kHz would probably do, but a bright high-contrast source at low duty seen at
+   the edge of vision is where PWM flicker gets noticed, and a clock is looked at
+   sideways constantly. 4 kHz costs nothing: the timer reload is still about
+   18000 counts, far more than the 4096 duty steps, so resolution is untouched.
+   Resolution would only start to suffer above roughly 17 kHz. */
+#define PWM_FREQ_HZ 4000
 
 /**
  * Indicator brightness levels, mapped to duty on a gamma curve. Luminous output
@@ -170,6 +198,11 @@ uint8_t last_rendered_dp = 0xFF;
  */
 #define LED_LEVELS 8
 static const uint16_t led_gamma[LED_LEVELS] = {64, 194, 473, 891, 1456, 2175, 3053, 4095};
+
+/* The same curve for the display, with a higher floor: an indicator only has to
+   be visible at its dimmest, whereas the display has to stay readable. */
+#define DISP_LEVELS 8
+static const uint16_t disp_gamma[DISP_LEVELS] = {128, 259, 546, 964, 1529, 2248, 3126, 4095};
 #define MENU_TIMEOUT_MS 10000
 
 // Function definitions
@@ -180,6 +213,7 @@ void setup_usb();
 void settings_load();
 void settings_save();
 void update_leds();
+void update_display_brightness();
 void render();
 void handle_input();
 void begin_edit();
@@ -198,14 +232,20 @@ static inline bool blink_on()
 
 void setup()
 {
+  // analogWrite's resolution and frequency are global, shared by the indicator
+  // LEDs on TIM4 and the display's ~OE on TIM2. Set once, here, before anything
+  // uses them -- tuning one feature must not silently change the other.
+  analogWriteResolution(PWM_BITS);
+  analogWriteFrequency(PWM_FREQ_HZ);
+
   setup_rtc();
   setup_user_btns();
   setup_user_leds();
 
   settings_load();
 
-  display.begin();
-  display.enable();
+  display.begin(0U, PWM_MAX_DUTY);
+  update_display_brightness();
 
   setup_usb();
   Serial.dtr(true);
@@ -224,6 +264,9 @@ void setup()
   serial_commands_.AddCommand(&cmd_get_leds_);
   serial_commands_.AddCommand(&cmd_get_bright_);
   serial_commands_.AddCommand(&cmd_set_bright_);
+  serial_commands_.AddCommand(&cmd_get_disp_);
+  serial_commands_.AddCommand(&cmd_set_disp_);
+  serial_commands_.AddCommand(&cmd_get_backup_);
 
   last_activity_ms = millis();
 
@@ -266,6 +309,7 @@ void loop()
 
   render();
   update_leds();
+  update_display_brightness();
 
   // reset the button states
   btnSetState = ButtonState::UNCHANGED;
@@ -350,6 +394,28 @@ static uint16_t breath_duty(uint16_t peak)
   return trough + (uint16_t)(((uint32_t)(peak - trough) * shaped) / SPAN);
 }
 
+// The display level in force right now, previewing an edit in progress for the
+// same reason the indicators do -- and here the thing being adjusted is the very
+// thing you are looking at.
+static uint8_t effective_display_level()
+{
+  if (stateMachine.getState() == State::EDIT && edit_item == MENU_DISP)
+  {
+    return (edit_field[0] < DISP_LEVELS) ? edit_field[0] : (DISP_LEVELS - 1);
+  }
+  return (settings.displayLevel < DISP_LEVELS) ? settings.displayLevel
+                                               : (DISP_LEVELS - 1);
+}
+
+void update_display_brightness()
+{
+  uint16_t duty = disp_gamma[effective_display_level()];
+  if (duty != display.getBrightness())
+  {
+    display.setBrightness(duty);
+  }
+}
+
 // The level in force right now: an editor in progress previews its value so the
 // choice is made by eye, and backing out restores the committed setting because
 // this falls straight back to it.
@@ -365,7 +431,6 @@ static uint8_t effective_indicator_level()
 
 void setup_user_leds()
 {
-  analogWriteResolution(LED_PWM_BITS);
   analogWrite(LED_TOP, 0);
   analogWrite(LED_MID, 0);
   analogWrite(LED_BOT, 0);
@@ -441,7 +506,12 @@ void settings_load()
 {
   enableBackupDomain();
 
-  if (getBackupRegister(BKP_MAGIC_REG) != BKP_MAGIC_VALUE)
+  boot_magic_seen = getBackupRegister(BKP_MAGIC_REG);
+  boot_flags_seen = getBackupRegister(BKP_FLAGS_REG);
+  boot_alarm_seen = getBackupRegister(BKP_ALARM_REG);
+  boot_bright_seen = getBackupRegister(BKP_BRIGHT_REG);
+
+  if (boot_magic_seen != BKP_MAGIC_VALUE)
   {
     // Backup memory has never held settings (fresh coin cell, or first run of
     // this firmware). Without the magic, arbitrary contents would read as a
@@ -458,10 +528,17 @@ void settings_load()
   settings.alarmHour = (alarm >> 8) & 0xFF;
   settings.alarmMinute = alarm & 0xFF;
 
-  settings.indicatorLevel = getBackupRegister(BKP_BRIGHT_REG) & 0xFF;
+  uint32_t brightness = getBackupRegister(BKP_BRIGHT_REG);
+  settings.indicatorLevel = brightness & 0xFF;
+  uint8_t storedDisplay = (brightness >> 8) & 0xFF;
+  settings.displayLevel = storedDisplay ? (storedDisplay - 1) : (DISP_LEVELS / 2);
   if (settings.indicatorLevel >= LED_LEVELS)
   {
     settings.indicatorLevel = LED_LEVELS / 2;
+  }
+  if (settings.displayLevel >= DISP_LEVELS)
+  {
+    settings.displayLevel = DISP_LEVELS / 2;
   }
 
   if (settings.alarmHour > 23)
@@ -491,9 +568,8 @@ void settings_save()
   setBackupRegister(BKP_FLAGS_REG, flags);
   setBackupRegister(BKP_ALARM_REG, ((uint32_t)settings.alarmHour << 8) | settings.alarmMinute);
 
-  // Read-modify-write: the high byte belongs to display-dimming.
-  uint32_t bright = getBackupRegister(BKP_BRIGHT_REG) & 0xFF00U;
-  setBackupRegister(BKP_BRIGHT_REG, bright | settings.indicatorLevel);
+  setBackupRegister(BKP_BRIGHT_REG,
+                    (((uint32_t)settings.displayLevel + 1) << 8) | settings.indicatorLevel);
 
   setBackupRegister(BKP_MAGIC_REG, BKP_MAGIC_VALUE);
 }
@@ -565,6 +641,9 @@ static void render_menu(char *buf)
   case MENU_BRIGHT:
     label = " LEd  ";
     break;
+  case MENU_DISP:
+    label = " dISP ";
+    break;
   default:
     label = "      ";
     break;
@@ -615,6 +694,11 @@ static void render_edit(char *buf)
   case MENU_BRIGHT:
     // Levels read 1..8 rather than 0..7; the indicators themselves are the preview.
     memcpy(buf, "LEd   ", 6);
+    put2(buf, 4, edit_field[0] + 1, show);
+    break;
+
+  case MENU_DISP:
+    memcpy(buf, "dISP  ", 6);
     put2(buf, 4, edit_field[0] + 1, show);
     break;
 
@@ -709,6 +793,10 @@ void begin_edit()
     edit_field[0] = settings.indicatorLevel;
     break;
 
+  case MENU_DISP:
+    edit_field[0] = settings.displayLevel;
+    break;
+
   default:
     break;
   }
@@ -764,6 +852,10 @@ static void field_limits(uint8_t field, uint8_t *lo, uint8_t *hi)
 
   case MENU_BRIGHT:
     *hi = LED_LEVELS - 1;
+    break;
+
+  case MENU_DISP:
+    *hi = DISP_LEVELS - 1;
     break;
 
   default:
@@ -835,6 +927,11 @@ void commit_edit()
 
   case MENU_BRIGHT:
     settings.indicatorLevel = edit_field[0];
+    settings_save();
+    break;
+
+  case MENU_DISP:
+    settings.displayLevel = edit_field[0];
     settings_save();
     break;
 
@@ -1258,6 +1355,53 @@ void cmd_alarm_enable(SerialCommands *sender)
   }
 
   sender->GetSerial()->println("OK");
+}
+
+void cmd_get_disp(SerialCommands *sender)
+{
+  // "<level> <duty>" -- the duty makes the active-low inversion checkable from a
+  // host: a low level must read a low duty, not a high one.
+  sender->GetSerial()->printf("%d %d\r\n",
+                              settings.displayLevel + 1,
+                              disp_gamma[effective_display_level()]);
+}
+
+void cmd_set_disp(SerialCommands *sender)
+{
+  char *level_str = sender->Next();
+  if (level_str == NULL)
+  {
+    sender->GetSerial()->println("ERROR NO_LEVEL");
+    return;
+  }
+
+  int level = atoi(level_str);
+  if (level < 1 || level > DISP_LEVELS)
+  {
+    sender->GetSerial()->printf("ERROR LEVEL OUT OF RANGE {%d}: %s", level, level_str);
+    return;
+  }
+
+  settings.displayLevel = level - 1;
+  settings_save();
+  sender->GetSerial()->println("OK");
+}
+
+void cmd_get_backup(SerialCommands *sender)
+{
+  // "boot:<magic> <flags> <alarm> <bright>  now:<magic> <flags> <alarm> <bright>"
+  // The boot values are what settings_load() saw; the now values are what the
+  // registers hold at this moment.
+  sender->GetSerial()->printf("boot:%04lX %04lX %04lX %04lX now:%04lX %04lX %04lX %04lX expect_magic:%04X\r\n",
+                              (unsigned long)boot_magic_seen,
+                              (unsigned long)boot_flags_seen,
+                              (unsigned long)boot_alarm_seen,
+                              (unsigned long)boot_bright_seen,
+                              (unsigned long)getBackupRegister(BKP_MAGIC_REG),
+                              (unsigned long)getBackupRegister(BKP_FLAGS_REG),
+                              (unsigned long)getBackupRegister(BKP_ALARM_REG),
+                              (unsigned long)getBackupRegister(BKP_BRIGHT_REG),
+                              BKP_MAGIC_VALUE);
 }
 
 void cmd_get_leds(SerialCommands *sender)
