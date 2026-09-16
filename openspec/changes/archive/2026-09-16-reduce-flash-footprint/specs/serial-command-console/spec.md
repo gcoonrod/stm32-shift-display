@@ -32,7 +32,7 @@ The one permitted exception is the calendar month, which SHALL be represented co
 ## ADDED Requirements
 
 ### Requirement: Command replies do not depend on formatted-output machinery
-Command replies SHALL be produced without pulling a general-purpose formatted-output implementation into the image. The text of every reply is fixed by the requirement above; how it is assembled is not, and the assembly method SHALL be chosen so that the cost of the whole `printf` family is not paid for `%d` and `%s`.
+Command replies SHALL be produced without pulling a general-purpose formatted-output implementation into the image. The text of every reply is fixed by "The existing command set is preserved exactly"; how it is assembled is not, and the assembly method SHALL be chosen so that the cost of the whole `printf` family is not paid for `%d` and `%s`.
 
 #### Scenario: The formatted-output engine is absent
 - **WHEN** the linked image is inspected for the general-purpose formatted-output implementation
