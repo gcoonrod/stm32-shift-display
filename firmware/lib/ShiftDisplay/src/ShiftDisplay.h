@@ -55,6 +55,22 @@ private:
     bool _same_port;
     uint32_t _bit1_clklow, _bit0_clklow;
 
+    /**
+     * ~OE's port and bit, resolved alongside the others so that begin() can
+     * prove no word this driver composes can reach it.
+     *
+     * The pin numbers are checked for distinctness at build time where they are
+     * defined, but that only catches an alias. This catches the subtler case:
+     * two different pin numbers landing on the same port bit, which the variant
+     * pin map could in principle do and which no amount of reading the pin
+     * defines would reveal. A word replayed by DMA shows nothing in the
+     * instruction stream when it is wrong, so it is worth proving rather than
+     * assuming.
+     */
+    GPIO_TypeDef *_oe_port;
+    uint32_t _oe_mask;
+    bool _pins_safe;
+
     // Private display state vars
     uint8_t _dp_state = 0b00000000; // [0:5] -> [0:5] DP state for each character, [6:7] -> Not used
     static const uint8_t _char_buffer_size = 6;
@@ -65,6 +81,10 @@ protected:
     // the pin is the complement of the brightness: this is the one place that
     // inversion lives, so no caller has to remember it.
     void write_output_enable(uint16_t brightness);
+
+    // True if any driven pin shares a port bit with ~OE. Checked once in begin();
+    // the driver refuses to initialise if it is.
+    bool oe_collides() const;
 
     uint8_t map_ascii(char ascii);
     void update_buffer(const char* new_content);

@@ -10,6 +10,7 @@
 
 #include <Arduino.h>
 #include "./ShiftDisplay.h"
+#include "./ShiftDisplayEngine.h"
 
 /**
  * Inter-edge throttle for the shift clock.
@@ -229,6 +230,41 @@ void ShiftDisplay::setBrightness(uint16_t duty)
     write_output_enable(_brightness);
 }
 
+/**
+ * True if any pin this driver drives shares a port bit with ~OE.
+ *
+ * Every word the driver composes -- and every word the DMA engine will replay
+ * from a buffer -- is built from these four masks and nothing else, so if none
+ * of them touches the ~OE bit on the ~OE port, no word can. Checking the masks
+ * once is therefore equivalent to checking every word, and far cheaper.
+ *
+ * Both halves of BSRR are covered: the clear words are the set words shifted up
+ * 16, so a mask clear of the ~OE bit is clear in both halves by construction.
+ */
+bool ShiftDisplay::oe_collides() const
+{
+    struct
+    {
+        GPIO_TypeDef *port;
+        uint32_t mask;
+    } const pins[] = {
+        {_data_port, _data_set},
+        {_clk_port, _clk_set},
+        {_clr_port, _srclr_set},
+        {_latch_port, _latch_set},
+    };
+
+    for (auto const &p : pins)
+    {
+        if (p.port == _oe_port && (p.mask & _oe_mask) != 0U)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void ShiftDisplay::begin(uint32_t delay_us, uint16_t max_duty)
 {
     pinMode(_serial_data_pin, OUTPUT);
@@ -270,13 +306,22 @@ void ShiftDisplay::begin(uint32_t delay_us, uint16_t max_duty)
     _bit1_clklow = _data_set | _clk_clr;
     _bit0_clklow = _data_clr | _clk_clr;
 
+    // Resolve ~OE too -- not to write it, but to prove nothing else can.
+    PinName oe = digitalPinToPinName(_output_en_pin);
+    _oe_port = set_GPIO_Port_Clock(STM_PORT(oe));
+    _oe_mask = STM_GPIO_PIN(oe);
+    _pins_safe = !oe_collides();
+
     _max_duty = max_duty;
     _brightness = 0;
     write_output_enable(0); // start blank, as the 10k pull-up already does
 
     _delay_us = delay_us;
 
-    _initialized = true;
+    // A driver that would write across ~OE does not come up. Blank is a state
+    // someone investigates; a display that dims unpredictably is one they live
+    // with and misdiagnose.
+    _initialized = _pins_safe;
 }
 
 void ShiftDisplay::update()

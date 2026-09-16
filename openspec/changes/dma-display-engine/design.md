@@ -127,7 +127,9 @@ constants:
 
 So with **TIM1 ARR = 374** (375 counts), CH1 compare near 0 and CH2 near 187:
 
-- bit clock **192 kHz** — far below the rate `bsrr-shift-out` ran at without failure
+- bit clock **192 kHz** — a 36x margin under the ~7 MHz `bsrr-shift-out` ran at without
+  failure, and that 7 MHz is itself only a floor on the true limit, since no failure
+  point was found to measure back from
 - slice **250 µs**, exactly one `~OE` period
 - frame **500 Hz** at N = 8 slices, comfortably flicker-free
 
@@ -138,6 +140,14 @@ The consequence for the code: these numbers must be **derived from `PWM_FREQ_HZ`
 core clock at build time, not written down**. Someone re-tuning `~OE` frequency for the
 LEDs would otherwise silently break the lock, and the symptom would be a per-digit
 brightness error nobody would connect to the edit.
+
+One wrinkle found in implementation (task 2.1): **`F_CPU` on this core expands to
+`SystemCoreClock`, a runtime variable**, so nothing derived from it is a constant expression
+and none of this could have been checked at build time. The core clock is therefore a
+declared constant, `SHIFT_ENGINE_CORE_CLOCK_HZ`, with everything else derived from it and
+`PWM_FREQ_HZ`; `shift_engine_clock_ok()` checks the running system against it before the
+engine is allowed to start. It is the one relationship that has to be verified at runtime,
+and it is verified rather than assumed.
 
 ### N = 8 slices
 
@@ -273,12 +283,28 @@ TIM1 and TIM3 are both unused, and both can reach two DMA channels:
 
 TIM1 first: it is an advanced-control timer whose compare events are free here (we use no
 outputs, so `BDTR.MOE` never comes into it), and its APB2 clock needs no prescaler
-reasoning. TIM3 is the drop-in fallback and reaches the same two channels.
+reasoning.
 
-**This needs verifying, not assuming.** Some Arduino STM32 core configurations claim TIM1
-for the HAL timebase, tone, or servo. A build-time check that the core has not already
-taken the timer is a task, not an assumption — and the fallback exists precisely because
-the answer might be yes.
+**Verified rather than assumed** (task 1.1). Every reference to TIM1's base address in the
+current image sits in a generic core function that switches over all timers —
+`get_timer_index`, `enableTimerClock`, `getTimerUpIrq`, `getTimerCCIrq`, the `HardwareTimer`
+constructor, the `HAL_TIM_*_Start` advanced-timer special-casing, `pinMode` and
+`analogWrite`. Those are dispatch tables, not claims. TIM1 is never instantiated or started.
+
+The check turned up something that changes the fallback, though. This variant
+(`variant_generic.h` for `F103C8T_F103CB(T-U)`) does name timers:
+
+```
+  #define TIMER_TONE    TIM3
+  #define TIMER_SERVO   TIM4
+```
+
+TIM4 already carries the indicator LEDs, and TIM3 is the tone timer. Neither is claimed at
+runtime — `tone()` only instantiates its timer when first called, and nothing in this
+firmware calls `tone()` or uses `Servo` — but TIM3 is no longer the free drop-in the
+proposal took it for. **Using TIM3 forecloses `tone()`**, which for a clock with no buzzer is
+a price worth paying, but it is a price rather than nothing. TIM1 is claimed by neither, and
+is now the choice on evidence rather than on preference.
 
 ### The bit-banged path stays compiled-in behind a flag
 
@@ -339,8 +365,9 @@ Nothing in the clock's normal appearance changes at any step. Rollback is the bu
 
 ## Open Questions
 
-- **Does the Arduino core already claim TIM1?** Resolved by inspection before any code is
-  written; TIM3 is the fallback and needs no other change.
+- ~~**Does the Arduino core already claim TIM1?**~~ Answered in task 1.1: it does not. The
+  variant names TIM3 as `TIMER_TONE` and TIM4 as `TIMER_SERVO`, neither of which touches
+  TIM1. See the timer-choice decision above.
 - **Is 8 slices enough to dim a digit attractively?** A level that reads as "dimmer" and
   not as "failing" may want the gamma floor the `~OE` levels use. Answerable only by eye,
   after step 3.

@@ -1,16 +1,16 @@
 ## 1. Settle the unknowns before writing any code
 
-- [ ] 1.1 Determine whether the Arduino core claims TIM1 for the HAL timebase, tone or servo; if it does, switch the design to TIM3 (CH3 → DMA1 ch 2, CH4 → DMA1 ch 3) and record which timer was chosen and why
-- [ ] 1.2 Confirm DMA1 channels 2 and 3 are unclaimed in the current image, the same way the proposal confirmed all seven were — by symbol, not by assumption
-- [ ] 1.3 Confirm nothing else in the build calls `analogWriteFrequency` after `setup()`, since the slice lock depends on the output-enable frequency not moving
-- [ ] 1.4 Record the baseline flash and RAM figures, and correct the stale block in `docs/DEVELOPMENT.md` that still quotes the pre-flash-reduction numbers
+- [x] 1.1 Determine whether the Arduino core claims TIM1 for the HAL timebase, tone or servo; if it does, switch the design to TIM3 (CH3 → DMA1 ch 2, CH4 → DMA1 ch 3) and record which timer was chosen and why. *It does not — every TIM1 reference is generic dispatch. The variant names TIM3 `TIMER_TONE` and TIM4 `TIMER_SERVO`, so TIM1 stays the choice and TIM3 is a costlier fallback than assumed. Recorded in design.md.*
+- [x] 1.2 Confirm DMA1 channels 2 and 3 are unclaimed in the current image, the same way the proposal confirmed all seven were — by symbol, not by assumption. *Both DMA1 literals in the image are in `HAL_UART_IRQHandler`; the console is USB CDC, so no channel is configured.*
+- [x] 1.3 Confirm nothing else in the build calls `analogWriteFrequency` after `setup()`, since the slice lock depends on the output-enable frequency not moving. *Called exactly once, `main.cpp:263`, before `display.begin()`.*
+- [x] 1.4 Record the baseline flash and RAM figures, and correct the stale block in `docs/DEVELOPMENT.md` that still quotes the pre-flash-reduction numbers. *Baseline RAM 4,920 / 20,480 and Flash 37,220 / 65,536; docs corrected from 5052 / 47348.*
 
 ## 2. Derive the constants
 
-- [ ] 2.1 Express the timer reload, the compare values and the slice length as expressions over `PWM_FREQ_HZ` and the core clock, so none of them is an independent literal
-- [ ] 2.2 Add a static assertion that the slice period is an exact whole number of output-enable periods, so retuning the PWM frequency fails the build rather than producing per-digit brightness errors
-- [ ] 2.3 Add a static assertion that no constructed word can set or clear bit 0 or bit 16 of the port, so nothing replayed by the DMA can reach `~OE`
-- [ ] 2.4 Confirm the derived bit clock against the rate measured in `bsrr-shift-out`, and record the margin
+- [x] 2.1 Express the timer reload, the compare values and the slice length as expressions over `PWM_FREQ_HZ` and the core clock, so none of them is an independent literal. *`ShiftDisplayEngine.h`. `F_CPU` turned out to be the runtime `SystemCoreClock`, so the core clock is a declared constant checked at runtime by `shift_engine_clock_ok()`; everything else derives.*
+- [x] 2.2 Add a static assertion that the slice period is an exact whole number of output-enable periods, so retuning the PWM frequency fails the build rather than producing per-digit brightness errors. *Verified to bite: `PWM_FREQ_HZ` 7000 fails the divides-the-clock assert, 3600 fails the divides-into-48 assert, 32 slices fails the 200 Hz flicker floor, 12 slices fails the power-of-two check.*
+- [x] 2.3 Add a static assertion that no constructed word can set or clear bit 0 or bit 16 of the port, so nothing replayed by the DMA can reach `~OE`. *Two layers, because the masks resolve at runtime: a `static_assert` in main.cpp that the five pin defines are distinct (verified to fail when OEB is aliased onto SER), and `ShiftDisplay::oe_collides()` in `begin()` proving no driven pin shares a port bit with `~OE` — the driver refuses to initialise if one does. Checking the four masks once is equivalent to checking every word, since every word is composed from them.*
+- [x] 2.4 Confirm the derived bit clock against the rate measured in `bsrr-shift-out`, and record the margin. *192 kHz against ~7 MHz: a 36x margin, and the 7 MHz is a floor rather than a measured limit. A `static_assert` caps the derived bit clock at 1 MHz.*
 
 ## 3. Build the waveform, with the engine stopped
 

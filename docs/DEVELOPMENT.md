@@ -47,8 +47,8 @@ several hundred MB, a few minutes. Later builds take about 25 seconds. A success
 build reports roughly:
 
 ```
-RAM:   [==        ]  24.7% (used 5052 bytes from 20480 bytes)
-Flash: [=======   ]  72.2% (used 47348 bytes from 65536 bytes)
+RAM:   [==        ]  24.0% (used 4920 bytes from 20480 bytes)
+Flash: [======    ]  56.8% (used 37220 bytes from 65536 bytes)
 ```
 
 Uploading needs the ST-Link on the SWD header. The board's default upload protocol

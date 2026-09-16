@@ -18,6 +18,27 @@ using namespace ace_button;
 #define OEB PA0
 
 /**
+ * ~OE must not be one of the shift-register control pins, and none of them may
+ * alias another.
+ *
+ * ~OE shares GPIOA with all four, and the driver reaches its pins through BSRR
+ * words composed from their masks. If a pin define were ever edited to collide
+ * with OEB, those words would reach across the brightness timer's pin -- and
+ * once the display engine replays them from a DMA buffer there is nothing in
+ * the instruction stream to show it. The failure would look like a display that
+ * dims wrongly, not like a bug.
+ *
+ * This catches an alias at build time. ShiftDisplay::begin() catches the subtler
+ * case of two distinct pin numbers landing on the same port bit, which only the
+ * variant's pin map knows.
+ */
+static_assert(OEB != SER && OEB != SRCLK && OEB != SRCLRB && OEB != RCLK,
+              "The output-enable pin collides with a shift-register control pin");
+static_assert(SER != SRCLK && SER != SRCLRB && SER != RCLK &&
+                  SRCLK != SRCLRB && SRCLK != RCLK && SRCLRB != RCLK,
+              "Two shift-register control pins are assigned to the same pin");
+
+/**
  * User LEDs. The positional names below are how the LEDs sit on the board; note
  * that they run opposite to the schematic's D-numbering, which is a trap worth
  * keeping in mind when cross-referencing:
@@ -194,23 +215,9 @@ uint8_t last_rendered_dp = 0xFF;
 #define BLINK_PERIOD_MS 300
 #define BREATH_PERIOD_MS 2500
 
-/**
- * Indicators run at 12-bit PWM, not the core's 8-bit default. Eight bits is
- * plenty for steady indicators but not for fading between them: at the dim end
- * a single duty step is a large fraction of the light output -- duty 4 to 5 is a
- * 25% jump -- so a breath built on 256 steps visibly staircases however fast it
- * is updated. 4096 steps put those jumps below the threshold where the eye
- * separates them. MAX_PWM_RESOLUTION is 16, so this is well inside what the
- * core supports.
- */
-#define PWM_BITS 12
-#define PWM_MAX_DUTY 4095
-/* 1 kHz would probably do, but a bright high-contrast source at low duty seen at
-   the edge of vision is where PWM flicker gets noticed, and a clock is looked at
-   sideways constantly. 4 kHz costs nothing: the timer reload is still about
-   18000 counts, far more than the 4096 duty steps, so resolution is untouched.
-   Resolution would only start to suffer above roughly 17 kHz. */
-#define PWM_FREQ_HZ 4000
+/* PWM_BITS, PWM_MAX_DUTY and PWM_FREQ_HZ moved to header.h: the display engine's
+   timer constants are derived from PWM_FREQ_HZ, so it has to be visible to the
+   ShiftDisplay library as well as to this file. */
 
 /**
  * Indicator brightness levels, mapped to duty on a gamma curve. Luminous output
