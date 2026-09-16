@@ -48,12 +48,12 @@
 
 ## 7. The menu-exit fade
 
-- [x] 7.1 Add the transition detection: compare the state either side of `stateMachine.update()` and recognise `MENU`/`EDIT` → `IDLE`, so backing out, committing and timing out all trigger alike.
+- [x] 7.1 Add the transition detection: compare the state either side of `stateMachine.update()` and recognise `MENU`/`EDIT` → `IDLE`, so backing out, committing and timing out all trigger alike. *Confirmed on the buttons after the self-abort fix.*
 - [x] 7.2 Confirm `FIRING` → `IDLE` does not trigger it — dismissing an alarm shows the time at once. *Confirmed with a real alarm: levels held 8 8 8 8 8 8 through firing and dismissal.*
 - [x] 7.3 Add the fade stepper as its own call in the loop tail alongside `update_leds()`, driven from `millis()` against a start stamp rather than by counting steps.
 - [x] 7.4 Confirm `render()` is untouched and nothing is re-shifted for the fade; the `time_dirty` path must stay exactly as cheap as it is. *`render()` is unmodified. The fade moves per-digit levels, which are independent of the character buffer.*
 - [x] 7.5 Wire the per-position ramp: position *p* starts at `p × STAGGER` and reaches full over `FADE`.
-- [ ] 7.6 Add the abort: any button press, menu re-entry or alarm fire snaps every position to full immediately
+- [x] 7.6 Add the abort: any button press, menu re-entry or alarm fire snaps every position to full immediately. *Confirmed on the buttons. Needed a fix first: the abort also fired on the pass that started the fade, because leaving the menu is **caused** by a button and the button states are not cleared until the end of the loop. The fade aborted itself instantly on every route out of the menu — and `WF` hid it completely, since no button is involved in a serial trigger.*
 - [x] 7.7 Add a build-flagged serial command to trigger the fade without walking the menu, so it can be watched repeatedly; confirm it is absent from the production image. *`WF`, optionally taking stagger and ramp so the timings could be compared live rather than one reflash per candidate.*
 - [x] 7.8 Watch the fade and judge whether 8 levels reads as a flourish or as steps. If it steps, work the remedies in the design's order — the global `~OE` ramp first, since it costs no RAM and buys more than more slices do — and record which was needed and why. *It reads as a flourish. **No remedy was needed**, and the choice of timing is the evidence: of five candidates the slowest was preferred, where visible stepping would have made the slowest the worst.*
 - [x] 7.9 Confirm the fade ends at the configured brightness at every level including the minimum, and that a digit is never left dim by any exit path. *Confirmed at global 8, 5, 3 and 1; levels returned to full every time.*

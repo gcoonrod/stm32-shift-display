@@ -536,10 +536,13 @@ void loop()
 
   State state_after = stateMachine.getState();
 
+  bool fade_just_began = false;
+
   if (state_after == State::IDLE &&
       (state_before == State::MENU || state_before == State::EDIT))
   {
     fade_begin();
+    fade_just_began = fade_active;
   }
 
   if (stateMachine.takeCommit())
@@ -552,8 +555,14 @@ void loop()
   update_display_brightness();
 
   /* Anything that wants the display readable now ends the fade: a button, a
-     return to the menu, an alarm firing. */
-  if (fade_active &&
+     return to the menu, an alarm firing.
+     
+     Not on the pass that started it, though. Leaving the menu is *caused* by a
+     button, and the button states are not cleared until the end of the loop, so
+     the press that triggered the fade is still latched here and would abort it
+     immediately -- every time, for every route out of the menu. That is why this
+     worked when driven from the serial command and never once from the buttons. */
+  if (fade_active && !fade_just_began &&
       (stateMachine.getState() != State::IDLE ||
        btnSetState != ButtonState::UNCHANGED ||
        btnPlusState != ButtonState::UNCHANGED ||
