@@ -147,6 +147,27 @@ So with **TIM1 ARR = 249** (250 counts), CH1 compare near 0 and CH2 near 125:
 Both timers count from the same 72 MHz, so the relationship is exact and permanent
 rather than nominal.
 
+**Measured, and it moved two arguments** (task 3.3/3.4). A CPU replay of the finished
+waveform, writing exactly the words the DMA will, runs one 8-slice frame in **111 µs** —
+9,011 frames/second flat out, a 3.46 MHz bit clock, reproducible to 1 µs across runs.
+
+That is 18x the 500 Hz the engine targets, and it is why the replay showed no flicker at
+all. Sustaining the target 500 Hz from the CPU would cost **5.5% of it**, not the whole
+loop. The proposal's framing — "doing that from the CPU means spending the loop on it
+forever" — is wrong, and the honest case for DMA is narrower: exact jitter-free timing that
+does not depend on what else the loop is doing, and CPU attention that does not have to be
+budgeted at all. Both are real. Neither is "the CPU cannot do this."
+
+**And the uniformity result does not validate the lock.** At 111 µs per frame a whole frame
+fits inside one 250 µs `~OE` period, so a replay slice is 13.9 µs — 5.5% of an `~OE`
+period, exactly the fraction-of-a-period case described above as the bad one. Six digits at
+4/8 nevertheless looked uniform, because the CPU replay is **free-running**: nothing locks
+it to `~OE`, the phase drifts continuously, and over the eye's integration time the error
+averages away. The DMA will avoid the same problem by the opposite means, locking so that
+the error never arises. Two mechanisms, same outcome — so uniformity under replay is
+evidence that per-digit dimming works, and no evidence at all about the lock. That stays
+unverified until the engine runs at 500 Hz.
+
 The consequence for the code: these numbers must be **derived from `PWM_FREQ_HZ` and the
 core clock at build time, not written down**. Someone re-tuning `~OE` frequency for the
 LEDs would otherwise silently break the lock, and the symptom would be a per-digit

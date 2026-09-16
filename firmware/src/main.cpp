@@ -96,6 +96,7 @@ void cmd_set_pattern(SerialCommands *sender);
 void cmd_wave_verify(SerialCommands *sender);
 void cmd_wave_level(SerialCommands *sender);
 void cmd_wave_dump(SerialCommands *sender);
+void cmd_wave_rate(SerialCommands *sender);
 #endif
 void cmd_set_disp(SerialCommands *sender);
 
@@ -128,6 +129,7 @@ bool wave_verify = false;
 SerialCommand cmd_wave_verify_("WV", cmd_wave_verify);
 SerialCommand cmd_wave_level_("WL", cmd_wave_level);
 SerialCommand cmd_wave_dump_("WD", cmd_wave_dump);
+SerialCommand cmd_wave_rate_("WR", cmd_wave_rate);
 #endif
 
 STM32RTC &rtc = STM32RTC::getInstance();
@@ -341,6 +343,7 @@ void setup()
   serial_commands_.AddCommand(&cmd_wave_verify_);
   serial_commands_.AddCommand(&cmd_wave_level_);
   serial_commands_.AddCommand(&cmd_wave_dump_);
+  serial_commands_.AddCommand(&cmd_wave_rate_);
 #endif
 
   last_activity_ms = millis();
@@ -1717,6 +1720,55 @@ void cmd_wave_level(SerialCommands *sender)
 
   display.setDigitLevel((uint8_t)pos, (uint8_t)lvl);
   out->println("OK");
+}
+
+/**
+ * Measure what the CPU replay actually achieves, flat out.
+ *
+ * The replay turned out not to flicker, which the proposal did not expect, so
+ * the rate it reaches is worth a number rather than an inference. It also sets
+ * the honest terms for what DMA buys: not "the CPU cannot do this" but "the CPU
+ * need not spend itself doing it".
+ *
+ * Blocks the loop for the duration. It is a measurement in a test build.
+ */
+void cmd_wave_rate(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+  const uint16_t FRAMES = 200;
+
+  uint32_t t0 = micros();
+  for (uint16_t f = 0; f < FRAMES; f++)
+  {
+    for (uint8_t s = 0; s < ShiftDisplay::maxDigitLevel(); s++)
+    {
+      display.shiftSliceByHand(s);
+    }
+  }
+  uint32_t dt = micros() - t0;
+
+  if (dt == 0)
+  {
+    out->println("ERROR NO_ELAPSED");
+    return;
+  }
+
+  uint32_t frame_hz = (uint32_t)((uint64_t)FRAMES * 1000000ULL / dt);
+  uint32_t bits = (uint32_t)FRAMES * ShiftDisplay::maxDigitLevel() * SHIFT_ENGINE_BITS_PER_SLICE;
+  uint32_t bit_hz = (uint32_t)((uint64_t)bits * 1000000ULL / dt);
+
+  out->print("frames=");
+  out->print(FRAMES);
+  out->print(" us=");
+  out->print(dt);
+  out->print(" frame_hz=");
+  out->print(frame_hz);
+  out->print(" bit_hz=");
+  out->print(bit_hz);
+  out->print(" target_frame_hz=");
+  out->print(SHIFT_ENGINE_FRAME_HZ);
+  out->print(" target_bit_hz=");
+  out->println(SHIFT_ENGINE_BIT_CLOCK_HZ);
 }
 
 void cmd_wave_dump(SerialCommands *sender)

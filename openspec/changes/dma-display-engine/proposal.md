@@ -9,8 +9,13 @@ enough, a digit lit in three refreshes out of eight is three-eighths as bright a
 in all eight — brightness as a property of the *data* rather than the output-enable line.
 That gives per-digit and per-segment control that the wiring cannot.
 
-The obstacle is cost. Data-path dimming needs the display re-shifted continuously at
-kilohertz rates, and doing that from the CPU means spending the loop on it forever.
+The obstacle is cost — though **less than this originally claimed**. Data-path dimming
+needs the display re-shifted continuously at kilohertz rates, and this said that doing it
+from the CPU means spending the loop on it forever. Measurement says otherwise: the CPU
+replays a whole 8-slice frame in 111 µs, so sustaining the 500 Hz the engine targets costs
+about 5.5% of it, and flat out it manages 9 kHz without flickering. The real case for DMA
+is narrower and still sound: timing that is exact and jitter-free rather than dependent on
+what else the loop is doing, and refresh that needs no CPU attention to budget.
 
 DMA removes the obstacle entirely. `BSRR` takes a 32-bit word whose low half sets pins and
 whose high half clears them, so an entire shift waveform can be precomputed as an array of

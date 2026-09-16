@@ -16,8 +16,8 @@
 
 - [x] 3.1 Add the buffer and the word builder: one data word per bit, `SER` set-or-clear with `SRCLK` low, and the `RCLK` set/clear bits in words 0 and 1 of each slice. *`build_waveform()`. Bit order matches `update_display()`/`shiftOutByte()` exactly — bytes `_buffer[5]`..`_buffer[0]`, LSB first, DP in bit 0. Verified from the device: `w0=00180004` (clear SER|SRCLK, set RCLK), `w1` releases RCLK, `w2+` carry no latch bits, and no word sets bit 0 or 16.*
 - [x] 3.2 Add the single constant clock-high word the second channel will replay. *`_clk_high_word`, a member so the DMA channel has a source address.*
-- [ ] 3.3 Render the current display buffer into one slice and shift that slice out through the *existing* bit-banged path; confirm the display is identical to today
-- [ ] 3.4 Confirm the latch-the-previous-slice arrangement produces the right content when slices are shifted back to back, still by hand
+- [x] 3.3 Render the current display buffer into one slice and shift that slice out through the *existing* bit-banged path; confirm the display is identical to today. *Confirmed on hardware at 12:34:56 in 24-hour mode — correct digits, nothing garbled.*
+- [x] 3.4 Confirm the latch-the-previous-slice arrangement produces the right content when slices are shifted back to back, still by hand. *Confirmed — content in the right positions, not shifted by one. Per-digit dimming also works: a single digit steps visibly dimmer, a 1-2-3-4-6-8 gradient reads as a ramp, and a hand-driven fade read as a flourish rather than as steps.*
 
 ## 4. Start the engine
 
@@ -42,7 +42,7 @@
 - [ ] 6.1 Add a per-position slice count, defaulting to full, and render each slice according to it
 - [ ] 6.2 Confirm a single dimmed digit is visibly dimmer and still legible, with the others unaffected
 - [ ] 6.3 Confirm zero slices blanks a position and leaves the others alone
-- [ ] 6.4 Confirm equal slice counts on different positions look equally bright — this is the check that the slice/output-enable lock actually holds
+- [ ] 6.4 Confirm equal slice counts on different positions look equally bright — this is the check that the slice/output-enable lock actually holds. **Must be done under the DMA engine, not the CPU replay.** Six digits at 4/8 already look uniform under replay, but that proves nothing about the lock: the replay free-runs, so its phase against `~OE` drifts and the error averages away. The engine is locked instead, and only a locked run tests locking
 - [ ] 6.5 Watch a dimmed digit for a spell at several global brightness levels, looking for beat or shimmer that is not commanded
 - [ ] 6.6 Confirm the global brightness setting still dims everything together and keeps the relative proportions, and that a digit at full relative brightness is no brighter than the global minimum allows
 
