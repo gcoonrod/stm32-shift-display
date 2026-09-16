@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 7-segment display through six daisy-chained 74HC595 shift registers (no multiplexing). The repo
 holds the KiCad hardware design (board **rev 2**), the FreeCAD stand, the PlatformIO/Arduino
 firmware, and a Python host tool. Timekeeping, the USB CDC command console, the on-device
-menu, the three indicator LEDs, and a daily alarm all work. Display brightness (PWM on the
-595 `OE` line) is the main thing still unbuilt.
+menu, the three indicator LEDs, a daily alarm, global and per-digit display brightness, and the
+DMA refresh engine all work.
 
 **[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) is the authority for commands** — prerequisites,
 build, flash, the CDC command table, the pin map, known defects, and machine-specific facts. Read
@@ -49,16 +49,41 @@ See the known-defects list in `docs/DEVELOPMENT.md` before using it as a read-on
 `firmware/src/main.cpp` is a cooperative super-loop; the three `firmware/lib/*` libraries are local
 PlatformIO libs, not published ones.
 
-**Display pipeline (`lib/ShiftDisplay`).** Pins are resolved to ports and `BSRR` words once in
-`begin()`; the shift loop is two stores per bit. Never write GPIOA as a whole — `~OE` shares
-the port and belongs to the brightness timer. The shift rate is unthrottled (`SHIFT_EDGE_NOPS`
-defaults to 0) because no failure was found at ~7 MHz; the margin is unquantified, so a
-throttle is the first thing to try if wrong segments ever appear.
- Owns a 6-char ASCII buffer plus a `_dp_state` bitmask for
-decimal points, and subclasses `Print`. `writeDisplay(buf, dp)` updates the buffer and shifts it
-out; `update()` re-shifts the existing buffer. **Shifting out does not make anything visible —
-`latch()` must follow.** Bytes go out LSB-first and the buffer is shifted in reverse index order, so
-`_buffer[0]` is the leftmost digit. `map_ascii()` indexes one ASCII-keyed table, which is the single source of truth for what
+**Display pipeline (`lib/ShiftDisplay`).** The display refreshes itself: TIM1 and two DMA
+channels replay a precomputed waveform into `GPIOA->BSRR` at 500 Hz with the CPU uninvolved.
+`SHIFT_ENGINE_DMA=0` falls back to the bit-banged shift loop, which stays compiled in so a bad
+peripheral configuration is one rebuild from a working clock.
+
+```
+TIM1 update -> DMA1 ch5 -> GPIOA->BSRR   48 words/slice, incrementing
+TIM1 CC1    -> DMA1 ch2 -> GPIOA->BSRR   one constant word (SRCLK high), no increment
+```
+
+Data rides the **update** event, not CH1, because CH1 would need `CCR1 = 0` — a compare
+coinciding with the counter wrap. The rising clock edge carries no data, so it is one constant
+word replayed with memory increment off: 48 words per slice, not 96. The latch rides in words 0
+and 1 of each slice and presents the *previous* slice, costing no extra words and no third
+channel; appending latch words would not work, as the clock channel keeps firing during them and
+extra clocks push data off a chain exactly as long as its data.
+
+**The board runs at 48 MHz, not 72.** `SHIFT_ENGINE_CORE_CLOCK_HZ` records that and
+`shift_engine_clock_ok()` checks it at runtime, because `F_CPU` here expands to the runtime
+`SystemCoreClock` and cannot be used in a constant expression. Everything else derives from it
+and `PWM_FREQ_HZ`, with `static_assert`s that fail the build if a slice stops being a whole
+number of `~OE` periods. **Never write those constants as literals** — see `ShiftDisplayEngine.h`.
+
+Per-digit brightness comes from the data: a digit lit in *k* of 8 slices is *k*/8 as bright.
+It multiplies with the global `~OE` level rather than replacing it. This is what the menu-exit
+fade uses.
+
+Never write GPIOA as a whole — `~OE` shares the port and belongs to the brightness timer. A
+`static_assert` in `main.cpp` catches an aliased pin define and `oe_collides()` in `begin()`
+catches two pins landing on the same port bit; the driver refuses to initialise if either does.
+
+Owns a 6-char ASCII buffer plus a `_dp_state` bitmask for decimal points, and subclasses `Print`.
+`setContent(buf, dp)` updates the buffer and rebuilds the waveform — under the engine that is all
+a caller needs, and `latch()` is a no-op. Bytes go out LSB-first and the buffer is shifted in
+reverse index order, so `_buffer[0]` is the leftmost digit. `map_ascii()` indexes one ASCII-keyed table, which is the single source of truth for what
 renders: a character is drawable exactly when it has a non-zero entry. Add glyphs there and
 nowhere else. `M` and `W` are absent deliberately — neither is legible on seven segments.
 `enable()`/`disable()` are brightness operations on the 595 `~OE` line, which `ShiftDisplay`

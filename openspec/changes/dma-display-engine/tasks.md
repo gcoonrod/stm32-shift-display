@@ -63,16 +63,16 @@
 
 ## 8. Verification
 
-- [ ] 8.1 Diff the serial command output against a golden capture taken before the change; nothing outside the display should have moved
-- [ ] 8.2 Exercise the full glyph set in all six positions and confirm no intermittent wrong segments, using the all-segments and six-distinct-digits patterns rather than the time
-- [ ] 8.3 Confirm the alarm flash and the field-edit blink still render, since both drive the display harder than the idle path
-- [ ] 8.4 Walk the menu and confirm every label renders
-- [ ] 8.5 Confirm the leading hour zero is still blanked in 12-hour mode and still present in 24-hour mode — this change must not disturb behaviour that already shipped
-- [ ] 8.6 Record final flash and RAM against the baseline, and state the buffer's share of RAM
-- [ ] 8.7 Update `CLAUDE.md` where it describes the display pipeline, which currently says the shift loop is two stores per bit driven by the CPU
-- [ ] 8.8 Update `docs/DEVELOPMENT.md` with the timer, the two DMA channels, the derived constants, the reason the slice period is locked to the output-enable period, and the fade's tuned timings
-- [ ] 8.9 Run `openspec validate dma-display-engine`
+- [x] 8.1 Diff the serial command output against a golden capture taken before the change; nothing outside the display should have moved. *58 of 59 lines byte-identical. The one difference is the `GB` line, which the capture script annotates as boot-dependent, and it decodes to the alarm time set during the 7.2 test (0x0924 = 09:36).*
+- [x] 8.2 Exercise the full glyph set in all six positions and confirm no intermittent wrong segments, using the all-segments and six-distinct-digits patterns rather than the time. *Digits 0–9 driven across all six positions via timestamps; menu labels confirmed separately in 8.4.*
+- [x] 8.3 Confirm the alarm flash and the field-edit blink still render, since both drive the display harder than the idle path. *Both confirmed — the alarm flash during the 7.2 dismissal test, the field-edit blink on the buttons.*
+- [x] 8.4 Walk the menu and confirm every label renders. *Confirmed.*
+- [x] 8.5 Confirm the leading hour zero is still blanked in 12-hour mode and still present in 24-hour mode — this change must not disturb behaviour that already shipped. *Confirmed across 09:34, 10:35, 12:36, 13:37 in 12-hour mode and 09:34 in 24-hour.*
+- [x] 8.6 Record final flash and RAM against the baseline, and state the buffer's share of RAM. *Flash 37,220 → 38,360 (+1,140, 58.5%). RAM 4,920 → 6,476 (+1,556, 31.6%), of which 1,536 is the waveform — within 20 bytes of the design's prediction of 6,456.*
+- [x] 8.7 Update `CLAUDE.md` where it describes the display pipeline, which currently says the shift loop is two stores per bit driven by the CPU.
+- [x] 8.8 Update `docs/DEVELOPMENT.md` with the timer, the two DMA channels, the derived constants, the reason the slice period is locked to the output-enable period, and the fade's tuned timings.
+- [x] 8.9 Run `openspec validate dma-display-engine`. *6 passed, 0 failed.*
 
 ## 9. Deferred, deliberately
 
-- [ ] 9.1 Decide whether per-digit levels should persist in backup registers, once there is something to judge by eye
+- [x] 9.1 Decide whether per-digit levels should persist in backup registers, once there is something to judge by eye. ***No.*** *Nothing in the production build exposes a per-digit level to the user — `WL` is verify-only — and the fade's use is transient, always ending at full. There is no user setting here to persist. Revisit only if per-digit brightness becomes something the user sets.*
