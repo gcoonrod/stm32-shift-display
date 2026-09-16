@@ -58,6 +58,42 @@ with `** Verified OK **` and `** Resetting Target **`.
 > **Do not pipe `pio run` through `tee`.** The exit status you get back is `tee`'s,
 > so a failed build looks like a success. Redirect instead: `pio run > build.log 2>&1`.
 
+### The display shift-out
+
+The driver writes the shift registers through `BSRR` rather than `digitalWrite`. `begin()`
+resolves each pin to its port and bit once and precomputes the `BSRR` words; the inner loop
+is then a select and two stores, about **9 instructions per bit** against roughly 117
+before. A full 48-bit refresh went from **~78 µs to ~6.7 µs**, a shift clock of roughly
+615 kHz to about **7 MHz**.
+
+`~OE` shares GPIOA with the data, clock, latch and clear lines and belongs to the
+brightness timer, so **every write names the pins it owns**. A port-wide write
+(`GPIOA->ODR = …`) would reach across it however careful the intent.
+
+**On the rate.** Six 74HC595s on 3.3 V: the family is characterised at 4.5 V, and for a
+chain this deep the limit is each stage's serial propagation delay plus the next stage's
+setup time, six times over. The far end of the chain is not wired back — `U15`'s `QH'` goes
+nowhere — so there is no electrical readback and a marginal rate would show up only as the
+occasional wrong segment.
+
+The rate was therefore established by measurement. Two patterns were displayed
+continuously, re-shifting every pass so a marginal rate had many chances to fail:
+`888888` (every segment lit, so a dropped bit shows as a gap) and `012345` (six distinct
+digits, so a shifted stream shows as wrong positions — which `888888` cannot reveal, every
+digit being identical).
+
+**Result: no failure at the fastest rate the loop can produce.** The throttle constant is
+therefore zero. Note what that does and does not establish: it shows ~7 MHz works on this
+board, at room temperature, with these parts. It does **not** quantify the margin, because
+no failure point was found to measure back from. If wrong segments ever appear, the first
+thing to try is a throttle.
+
+```
+-D SHIFT_EDGE_NOPS=n   insert n NOPs between clock edges (default 0)
+-D SHIFT_SWEEP         runtime-settable rate plus the SN and TP commands,
+                       for re-measuring; absent from the production build
+```
+
 ### Flash budget
 
 `./scripts/check-dev-env.sh` reports usage and headroom from the last build. Note it reads a
@@ -73,6 +109,10 @@ The `reduce-flash-footprint` change took usage from **53,924 bytes (82.3%)** to 
 | `print()` in place of `Print::printf` | 3,632 |
 | link-time optimisation | 4,672 |
 | **total** | **17,092** |
+
+The `bsrr-shift-out` change later added **364 bytes** back: resolving ports and masks once
+costs more state than the removed `digitalWrite` call sites saved. That change buys speed,
+not size.
 
 The first figure is the one worth understanding. `localtime()` reaches `tzset`, which reaches
 `sscanf` to parse a `TZ` string this firmware never sets, which drags in the whole

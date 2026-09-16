@@ -67,6 +67,10 @@ void cmd_get_bright(SerialCommands *sender);
 void cmd_set_bright(SerialCommands *sender);
 void cmd_get_disp(SerialCommands *sender);
 void cmd_get_backup(SerialCommands *sender);
+#ifdef SHIFT_SWEEP
+void cmd_set_nops(SerialCommands *sender);
+void cmd_set_pattern(SerialCommands *sender);
+#endif
 void cmd_set_disp(SerialCommands *sender);
 
 SerialCommand cmd_test_("TEST", cmd_test);
@@ -85,6 +89,10 @@ SerialCommand cmd_set_bright_("SI", cmd_set_bright);
 SerialCommand cmd_get_disp_("GD", cmd_get_disp);
 SerialCommand cmd_set_disp_("SD", cmd_set_disp);
 SerialCommand cmd_get_backup_("GB", cmd_get_backup);
+#ifdef SHIFT_SWEEP
+SerialCommand cmd_set_nops_("SN", cmd_set_nops);
+SerialCommand cmd_set_pattern_("TP", cmd_set_pattern);
+#endif
 
 STM32RTC &rtc = STM32RTC::getInstance();
 DateTimeBuffer_t date_time_buf = {0, 1, RTC_MONTH_JANUARY, 1, 0, 0, 0};
@@ -147,6 +155,23 @@ uint8_t edit_field[3] = {0, 0, 0};
 MenuState edit_item = MENU_NONE;
 
 volatile bool alarm_fire_request = false;
+
+#ifdef SHIFT_SWEEP
+/**
+ * Measurement scaffolding, compiled only into the sweep build.
+ *
+ * The shift rate has to be established on the assembled board: the parts are
+ * 74HC at 3.3 V and the chain is six deep, and the far end is not wired back, so
+ * there is no electrical readback. The only instrument is the display itself,
+ * which means the test pattern has to make corruption unmistakable.
+ *
+ * Two patterns, because there are two failure modes. All segments lit exposes a
+ * dropped bit. Six distinct digits expose a stream that has shifted -- which the
+ * all-lit pattern would hide completely, every digit being identical.
+ */
+extern volatile uint8_t shift_edge_nops;
+uint8_t test_pattern = 0; // 0 = show the clock, 1 = 888888, 2 = 012345
+#endif
 
 // What the very first backup-register read returned at boot, captured before
 // anything can overwrite it. If settings_load() misreads the magic on a cold
@@ -266,6 +291,10 @@ void setup()
   serial_commands_.AddCommand(&cmd_get_disp_);
   serial_commands_.AddCommand(&cmd_set_disp_);
   serial_commands_.AddCommand(&cmd_get_backup_);
+#ifdef SHIFT_SWEEP
+  serial_commands_.AddCommand(&cmd_set_nops_);
+  serial_commands_.AddCommand(&cmd_set_pattern_);
+#endif
 
   last_activity_ms = millis();
 
@@ -712,6 +741,29 @@ void render()
   uint8_t dp = 0;
 
   buf[6] = '\0';
+
+#ifdef SHIFT_SWEEP
+  if (test_pattern)
+  {
+    memcpy(buf, (test_pattern == 1) ? "888888" : "012345", 6);
+    if (dp != last_rendered_dp || memcmp(buf, last_rendered, 6) != 0)
+    {
+      display.writeDisplay(buf, dp);
+      display.latch();
+      memcpy(last_rendered, buf, 6);
+      last_rendered[6] = '\0';
+      last_rendered_dp = dp;
+    }
+    else
+    {
+      // Keep re-shifting so a marginal rate has chances to fail, rather than
+      // latching once and sitting on a result that happened to be correct.
+      display.writeDisplay(buf, dp);
+      display.latch();
+    }
+    return;
+  }
+#endif
 
   switch (stateMachine.getState())
   {
@@ -1520,6 +1572,37 @@ void cmd_get_backup(SerialCommands *sender)
   print4hex(out, BKP_MAGIC_VALUE);
   out->println();
 }
+
+#ifdef SHIFT_SWEEP
+void cmd_set_nops(SerialCommands *sender)
+{
+  char *arg = sender->Next();
+  if (arg == NULL)
+  {
+    sender->GetSerial()->print("nops=");
+    sender->GetSerial()->println(shift_edge_nops);
+    return;
+  }
+  shift_edge_nops = (uint8_t)atoi(arg);
+  sender->GetSerial()->print("nops=");
+  sender->GetSerial()->println(shift_edge_nops);
+}
+
+void cmd_set_pattern(SerialCommands *sender)
+{
+  char *arg = sender->Next();
+  if (arg == NULL)
+  {
+    sender->GetSerial()->print("pattern=");
+    sender->GetSerial()->println(test_pattern);
+    return;
+  }
+  test_pattern = (uint8_t)atoi(arg);
+  last_rendered[0] = '\0'; // force a redraw
+  sender->GetSerial()->print("pattern=");
+  sender->GetSerial()->println(test_pattern);
+}
+#endif
 
 void cmd_get_leds(SerialCommands *sender)
 {
