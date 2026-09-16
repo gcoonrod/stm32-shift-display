@@ -110,6 +110,11 @@ private:
     // all three must share a port. Checked in begin() rather than assumed.
     bool _engine_capable;
 
+    // True while the timer and both DMA channels are running. The bit-banged
+    // shift and latch paths must not run at the same time; they would fight the
+    // replay for the same pins.
+    bool _engine_running;
+
 protected:
     // Writes the output-enable line. ~OE is active low, so the duty written to
     // the pin is the complement of the brightness: this is the one place that
@@ -167,6 +172,18 @@ public:
     // False if the pin map puts data, clock and latch on different ports, in
     // which case one DMA channel cannot drive them and the engine cannot run.
     bool engineCapable() const { return _engine_capable; }
+
+    /**
+     * Hand the display to the timer and DMA, or take it back.
+     *
+     * startEngine() refuses unless the pins allow it and the running core clock
+     * matches the one the timing constants were derived from. Refusing leaves
+     * the display blank, which is a state someone investigates; shifting at the
+     * wrong rate is one they misdiagnose.
+     */
+    void startEngine();
+    void stopEngine();
+    bool engineRunning() const { return _engine_running; }
 
     // Read-only view of the refresh waveform, for verification.
     const uint32_t *waveform() const { return _wave; }

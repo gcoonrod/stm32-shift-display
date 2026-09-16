@@ -21,12 +21,12 @@
 
 ## 4. Start the engine
 
-- [ ] 4.1 Put the existing bit-banged path behind a build flag, so a bad configuration is one rebuild from a working clock
-- [ ] 4.2 Configure the timer: reload, the two compare channels, and DMA requests enabled on both
-- [ ] 4.3 Configure the data channel — memory-to-peripheral, 32-bit both ends, memory increment on, circular, destination `GPIOA->BSRR`
-- [ ] 4.4 Configure the clock channel — same, but memory increment off, pointed at the single constant word
-- [ ] 4.5 Start with every digit at full brightness in every slice; confirm the display is indistinguishable from the bit-banged build
-- [ ] 4.6 Confirm the CPU is genuinely out of it: hold the main loop busy for longer than a frame and confirm the display does not flicker, dim or corrupt
+- [x] 4.1 Put the existing bit-banged path behind a build flag, so a bad configuration is one rebuild from a working clock. *`SHIFT_ENGINE_DMA`, default 1; `-D SHIFT_ENGINE_DMA=0` restores the bit-banged shift-out. `WE 0`/`WE 1` also swap them at runtime in the verify build.*
+- [x] 4.2 Configure the timer: reload, the two compare channels, and DMA requests enabled on both. *Changed from the design: data rides the **update** event rather than CH1, because CH1 would need `CCR1 = 0` — a compare coinciding with the counter wrap, an edge case not worth betting a hard-to-debug peripheral on. Update *is* the wrap. So TIM1 update → DMA1 ch5 and TIM1 CC1 (at mid-period) → DMA1 ch2; both channels equally free.*
+- [x] 4.3 Configure the data channel — memory-to-peripheral, 32-bit both ends, memory increment on, circular, destination `GPIOA->BSRR`. *DMA1 ch5. Verified live: CNDTR counts down and reloads.*
+- [x] 4.4 Configure the clock channel — same, but memory increment off, pointed at the single constant word. *DMA1 ch2, source `_clk_high_word`.*
+- [x] 4.5 Start with every digit at full brightness in every slice; confirm the display is indistinguishable from the bit-banged build. *Confirmed on hardware — "it looks correct". Measured frame rate 500 Hz exactly across three runs, counted from CNDTR reloads, matching the derived target.*
+- [x] 4.6 Confirm the CPU is genuinely out of it: hold the main loop busy for longer than a frame and confirm the display does not flicker, dim or corrupt. *Confirmed: a 1-2-3-4-6-8 per-digit gradient held steady through 5 s with the main loop unable to execute an instruction. The first version of this test was weak — the display is non-multiplexed, so the 595s hold their last latch and a blocked loop leaves any build lit and frozen. A **dimmed** digit is the discriminating case, since it exists only while something re-shifts continuously.*
 - [ ] 4.7 Confirm the display is blank before the engine starts and through reset, rather than showing whatever the registers powered up holding
 
 ## 5. Rework the driver's entry points

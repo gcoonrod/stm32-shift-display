@@ -54,6 +54,13 @@
 #define SHIFT_ENGINE_SLICES 8
 #endif
 
+// Drive the display from the timer and DMA. Build with -D SHIFT_ENGINE_DMA=0 to
+// fall back to the bit-banged shift-out, which stays compiled in precisely so
+// that a bad peripheral configuration is one rebuild away from a working clock.
+#ifndef SHIFT_ENGINE_DMA
+#define SHIFT_ENGINE_DMA 1
+#endif
+
 // Six characters, eight bits each, one continuous 48-bit chain.
 #define SHIFT_ENGINE_BITS_PER_SLICE 48
 

@@ -97,6 +97,9 @@ void cmd_wave_verify(SerialCommands *sender);
 void cmd_wave_level(SerialCommands *sender);
 void cmd_wave_dump(SerialCommands *sender);
 void cmd_wave_rate(SerialCommands *sender);
+void cmd_wave_engine(SerialCommands *sender);
+void cmd_wave_block(SerialCommands *sender);
+void cmd_wave_reset(SerialCommands *sender);
 #endif
 void cmd_set_disp(SerialCommands *sender);
 
@@ -130,6 +133,9 @@ SerialCommand cmd_wave_verify_("WV", cmd_wave_verify);
 SerialCommand cmd_wave_level_("WL", cmd_wave_level);
 SerialCommand cmd_wave_dump_("WD", cmd_wave_dump);
 SerialCommand cmd_wave_rate_("WR", cmd_wave_rate);
+SerialCommand cmd_wave_engine_("WE", cmd_wave_engine);
+SerialCommand cmd_wave_block_("WB", cmd_wave_block);
+SerialCommand cmd_wave_reset_("WX", cmd_wave_reset);
 #endif
 
 STM32RTC &rtc = STM32RTC::getInstance();
@@ -282,6 +288,15 @@ void irq_timer_led();
  */
 static inline void display_write(const char *buf, uint8_t dp)
 {
+  // With the engine running -- or the CPU replay standing in for it -- content
+  // goes into the waveform and the refresh picks it up. Shifting and latching
+  // here as well would fight it. Without either, this is the shipping path.
+  if (display.engineRunning())
+  {
+    display.setContent(buf, dp);
+    return;
+  }
+
 #ifdef SHIFT_ENGINE_VERIFY
   if (wave_verify)
   {
@@ -289,6 +304,7 @@ static inline void display_write(const char *buf, uint8_t dp)
     return;
   }
 #endif
+
   display.writeDisplay(buf, dp);
   display.latch();
 }
@@ -344,6 +360,9 @@ void setup()
   serial_commands_.AddCommand(&cmd_wave_level_);
   serial_commands_.AddCommand(&cmd_wave_dump_);
   serial_commands_.AddCommand(&cmd_wave_rate_);
+  serial_commands_.AddCommand(&cmd_wave_engine_);
+  serial_commands_.AddCommand(&cmd_wave_block_);
+  serial_commands_.AddCommand(&cmd_wave_reset_);
 #endif
 
   last_activity_ms = millis();
@@ -1669,6 +1688,13 @@ void cmd_wave_verify(SerialCommands *sender)
 
   wave_verify = (atoi(arg) != 0);
 
+  if (wave_verify && display.engineRunning())
+  {
+    // Both drive the same pins. The engine wins unless it is told to stand down.
+    display.stopEngine();
+    out->println("engine stopped");
+  }
+
   if (!wave_verify)
   {
     // Leaving replay: put the shipping path back in charge of what is latched.
@@ -1732,9 +1758,111 @@ void cmd_wave_level(SerialCommands *sender)
  *
  * Blocks the loop for the duration. It is a measurement in a test build.
  */
+/**
+ * Hold the main loop for a while, on purpose.
+ *
+ * The claim the engine makes is that the display refreshes whether or not the
+ * CPU is paying attention. A loop that cannot run for two seconds is the
+ * bluntest possible test of it, and the one worth doing: if the refresh is
+ * secretly leaning on the loop, this is where it shows.
+ */
+/* Reset on demand, so "what does the display do coming up" is a repeatable
+   observation rather than something glimpsed during a reflash. */
+void cmd_wave_reset(SerialCommands *sender)
+{
+  sender->GetSerial()->println("resetting");
+  sender->GetSerial()->flush();
+  delay(50);
+  NVIC_SystemReset();
+}
+
+void cmd_wave_block(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+  char *arg = sender->Next();
+  uint32_t ms = (arg == NULL) ? 2000UL : (uint32_t)atol(arg);
+
+  if (ms > 10000UL)
+  {
+    ms = 10000UL;
+  }
+
+  out->print("blocking ");
+  out->print(ms);
+  out->println(" ms");
+  out->flush();
+
+  uint32_t t0 = millis();
+  while ((millis() - t0) < ms)
+  {
+    __asm__ volatile("nop");
+  }
+
+  out->println("unblocked");
+}
+
+void cmd_wave_engine(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+  char *arg = sender->Next();
+
+  if (arg == NULL)
+  {
+    out->print("engine=");
+    out->println(display.engineRunning() ? 1 : 0);
+    return;
+  }
+
+  if (atoi(arg) != 0)
+  {
+    wave_verify = false;
+    display.startEngine();
+  }
+  else
+  {
+    display.stopEngine();
+    time_dirty = true; // let the bit-banged path repaint
+  }
+
+  out->print("engine=");
+  out->println(display.engineRunning() ? 1 : 0);
+}
+
 void cmd_wave_rate(SerialCommands *sender)
 {
   Stream *out = sender->GetSerial();
+
+  if (display.engineRunning())
+  {
+    /* Count CNDTR reloads over a fixed window. The counter walks 384 words down
+       to 1 and reloads, once per frame, so a reload seen is a frame completed --
+       measured from the hardware rather than inferred from the constants. */
+    const uint32_t WINDOW_MS = 400;
+    uint32_t t0 = millis();
+    uint16_t last = (uint16_t)DMA1_Channel5->CNDTR;
+    uint32_t wraps = 0;
+
+    while ((millis() - t0) < WINDOW_MS)
+    {
+      uint16_t now = (uint16_t)DMA1_Channel5->CNDTR;
+      if (now > last)
+      {
+        wraps++;
+      }
+      last = now;
+    }
+
+    out->print("dma frames=");
+    out->print(wraps);
+    out->print(" in_ms=");
+    out->print(WINDOW_MS);
+    out->print(" frame_hz=");
+    out->print(wraps * 1000UL / WINDOW_MS);
+    out->print(" target_frame_hz=");
+    out->println(SHIFT_ENGINE_FRAME_HZ);
+    return;
+  }
+
   const uint16_t FRAMES = 200;
 
   uint32_t t0 = micros();
@@ -1791,6 +1919,10 @@ void cmd_wave_dump(SerialCommands *sender)
   out->print(SHIFT_ENGINE_FRAME_HZ);
   out->print(" capable=");
   out->print(display.engineCapable() ? 1 : 0);
+  out->print(" running=");
+  out->print(display.engineRunning() ? 1 : 0);
+  out->print(" cndtr=");
+  out->print(DMA1_Channel5->CNDTR);
   out->print(" clkok=");
   out->print(shift_engine_clock_ok() ? 1 : 0);
   out->print(" coreclk=");

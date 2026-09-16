@@ -297,6 +297,110 @@ void ShiftDisplay::setAllDigitLevels(uint8_t slices)
     build_waveform();
 }
 
+/**
+ * Hand the display to TIM1 and two DMA channels.
+ *
+ * The trigger pairing differs from the one the design first named, and the
+ * reason is worth keeping. The design had CH1 present the data and CH2 raise the
+ * clock, which needs CCR1 = 0 -- a compare that coincides with the counter wrap,
+ * and an edge case not worth betting a hard-to-debug peripheral on. The update
+ * event *is* the wrap, unambiguously, so the data rides on update and only the
+ * clock needs a compare, at mid-period where nothing is ambiguous.
+ *
+ *   TIM1 update  -> DMA1 ch5 -> GPIOA->BSRR   48 words per slice, incrementing
+ *   TIM1 CC1     -> DMA1 ch2 -> GPIOA->BSRR   one constant word, no increment
+ *
+ * Both channels are otherwise free: ch5 also serves USART1_RX and TIM2_CH1, ch2
+ * serves USART3_TX, SPI1_RX and TIM2_UP, and none of those is in this build.
+ *
+ * No pin is handed to an alternate function. SER, SRCLK and RCLK stay plain GPIO
+ * outputs and the DMA writes BSRR, which is the whole reason this approach works
+ * on a board whose shift registers are not wired to SPI. CC1E stays clear so
+ * PA8, TIM1_CH1's pin, is never driven.
+ *
+ * One clock edge fires before the first data word, because CC1 at mid-period
+ * comes before the first wrap. It is harmless: the chain is exactly 48 bits, so
+ * a leading garbage bit is pushed out by the time the first latch happens.
+ */
+void ShiftDisplay::startEngine()
+{
+    if (!_initialized || !_engine_capable || _engine_running)
+    {
+        return;
+    }
+
+    // Every timing constant was derived from an assumed core clock. If the
+    // running system disagrees, the bit clock and the slice-to-~OE lock are both
+    // wrong, and a blank display is the honest outcome.
+    if (!shift_engine_clock_ok())
+    {
+        return;
+    }
+
+    build_waveform();
+
+    // Idle the clock and latch low before the engine takes over.
+    _data_port->BSRR = _clk_clr | _latch_clr;
+
+    __HAL_RCC_DMA1_CLK_ENABLE();
+    __HAL_RCC_TIM1_CLK_ENABLE();
+
+    // Data: one word per bit, walking the waveform, wrapping forever.
+    DMA1_Channel5->CCR = 0;
+    DMA1_Channel5->CPAR = (uint32_t)&_data_port->BSRR;
+    DMA1_Channel5->CMAR = (uint32_t)_wave;
+    DMA1_Channel5->CNDTR = SHIFT_ENGINE_WORDS_TOTAL;
+    DMA1_Channel5->CCR = DMA_CCR_DIR | DMA_CCR_CIRC | DMA_CCR_MINC |
+                         DMA_CCR_PSIZE_1 | DMA_CCR_MSIZE_1 | DMA_CCR_PL_1;
+
+    // Clock: the same word every time, so no memory increment and four bytes of
+    // source for any buffer length.
+    DMA1_Channel2->CCR = 0;
+    DMA1_Channel2->CPAR = (uint32_t)&_data_port->BSRR;
+    DMA1_Channel2->CMAR = (uint32_t)&_clk_high_word;
+    DMA1_Channel2->CNDTR = SHIFT_ENGINE_WORDS_TOTAL;
+    DMA1_Channel2->CCR = DMA_CCR_DIR | DMA_CCR_CIRC |
+                         DMA_CCR_PSIZE_1 | DMA_CCR_MSIZE_1 | DMA_CCR_PL_1;
+
+    DMA1_Channel5->CCR |= DMA_CCR_EN;
+    DMA1_Channel2->CCR |= DMA_CCR_EN;
+
+    TIM1->CR1 = 0;
+    TIM1->CR2 = 0; // CCDS clear: CC1 requests come from the CC event, not update
+    TIM1->PSC = 0;
+    TIM1->ARR = SHIFT_ENGINE_ARR;
+    TIM1->CCR1 = SHIFT_ENGINE_CCR_CLOCK;
+    TIM1->CCER = 0; // no output pin is driven
+
+    // Load PSC and ARR, then clear the flags that generated, before enabling the
+    // DMA requests -- otherwise this update event fires a transfer of its own.
+    TIM1->EGR = TIM_EGR_UG;
+    TIM1->SR = 0;
+
+    TIM1->DIER = TIM_DIER_UDE | TIM_DIER_CC1DE;
+    TIM1->CR1 = TIM_CR1_CEN;
+
+    _engine_running = true;
+}
+
+void ShiftDisplay::stopEngine()
+{
+    if (!_engine_running)
+    {
+        return;
+    }
+
+    TIM1->CR1 &= ~TIM_CR1_CEN;
+    TIM1->DIER = 0;
+    DMA1_Channel5->CCR &= ~DMA_CCR_EN;
+    DMA1_Channel2->CCR &= ~DMA_CCR_EN;
+
+    // Leave the pins where the bit-banged path expects to find them.
+    _data_port->BSRR = _clk_clr | _latch_clr;
+
+    _engine_running = false;
+}
+
 void ShiftDisplay::shiftSliceByHand(uint8_t slice)
 {
     if (!_initialized || !_engine_capable || slice >= SHIFT_ENGINE_SLICES)
@@ -424,6 +528,7 @@ void ShiftDisplay::begin(uint32_t delay_us, uint16_t max_duty)
     // board they do -- PA3, PA4 and PA2 -- but the pin map is a variant's to
     // change, so this is checked rather than assumed.
     _engine_capable = (_data_port == _clk_port) && (_data_port == _latch_port);
+    _engine_running = false;
 
     // The single word the clock channel replays for every rising edge.
     _clk_high_word = _clk_set;
@@ -445,6 +550,12 @@ void ShiftDisplay::begin(uint32_t delay_us, uint16_t max_duty)
     // someone investigates; a display that dims unpredictably is one they live
     // with and misdiagnose.
     _initialized = _pins_safe;
+
+#if SHIFT_ENGINE_DMA
+    // Brightness is still zero here, so the first frame -- which latches whatever
+    // the registers powered up holding -- is never visible.
+    startEngine();
+#endif
 }
 
 void ShiftDisplay::update()
@@ -477,6 +588,12 @@ uint8_t ShiftDisplay::map_ascii(char ascii)
 
 void ShiftDisplay::shiftOutByte(uint8_t byte, bool dp)
 {
+    // The engine owns the pins while it runs; shifting here would fight it.
+    if (_engine_running)
+    {
+        return;
+    }
+
     if (dp)
     {
         SET_BIT(byte, DP_BM);
@@ -555,6 +672,12 @@ void ShiftDisplay::clear()
 
 void ShiftDisplay::latch()
 {
+    // The waveform latches every slice; a latch from here would land mid-stream.
+    if (_engine_running)
+    {
+        return;
+    }
+
     // Latch the shift register
     _latch_port->BSRR = _latch_clr;
     SHIFT_EDGE_DELAY();
