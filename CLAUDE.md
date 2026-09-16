@@ -49,7 +49,12 @@ See the known-defects list in `docs/DEVELOPMENT.md` before using it as a read-on
 `firmware/src/main.cpp` is a cooperative super-loop; the three `firmware/lib/*` libraries are local
 PlatformIO libs, not published ones.
 
-**Display pipeline (`lib/ShiftDisplay`).** Owns a 6-char ASCII buffer plus a `_dp_state` bitmask for
+**Display pipeline (`lib/ShiftDisplay`).** Pins are resolved to ports and `BSRR` words once in
+`begin()`; the shift loop is two stores per bit. Never write GPIOA as a whole — `~OE` shares
+the port and belongs to the brightness timer. The shift rate is unthrottled (`SHIFT_EDGE_NOPS`
+defaults to 0) because no failure was found at ~7 MHz; the margin is unquantified, so a
+throttle is the first thing to try if wrong segments ever appear.
+ Owns a 6-char ASCII buffer plus a `_dp_state` bitmask for
 decimal points, and subclasses `Print`. `writeDisplay(buf, dp)` updates the buffer and shifts it
 out; `update()` re-shifts the existing buffer. **Shifting out does not make anything visible —
 `latch()` must follow.** Bytes go out LSB-first and the buffer is shifted in reverse index order, so

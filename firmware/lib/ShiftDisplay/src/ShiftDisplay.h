@@ -26,8 +26,34 @@ private:
     bool _initialized;
     uint16_t _brightness; // 0 = blank, _max_duty = full
     uint16_t _max_duty;
-    uint32_t _delay_us;
-    uint32_t _delay_ms;
+    uint32_t _delay_us; // kept for API compatibility; see begin()
+
+    /**
+     * Resolved once in begin(). digitalWrite() spends ~35 cycles turning a pin
+     * number back into a port and a bit mask, every time, to reach a single
+     * store -- and the answer never changes, because the pins are fixed at
+     * construction.
+     *
+     * Each pin gets a BSRR set word and a clear word. BSRR's low half sets and
+     * its high half clears, so one store drives only the bits named in it:
+     * ~OE shares this port and belongs to the brightness timer, and a port-wide
+     * write would reach across it.
+     */
+    GPIO_TypeDef *_data_port;
+    GPIO_TypeDef *_clk_port;
+    GPIO_TypeDef *_clr_port;
+    GPIO_TypeDef *_latch_port;
+
+    uint32_t _data_set, _data_clr;
+    uint32_t _clk_set, _clk_clr;
+    uint32_t _srclr_set, _srclr_clr;
+    uint32_t _latch_set, _latch_clr;
+
+    // Data and clock share a port on this board, so one store can present a bit
+    // and drop the clock together. Not assumed -- begin() checks, and falls back
+    // to separate writes if they ever differ.
+    bool _same_port;
+    uint32_t _bit1_clklow, _bit0_clklow;
 
     // Private display state vars
     uint8_t _dp_state = 0b00000000; // [0:5] -> [0:5] DP state for each character, [6:7] -> Not used

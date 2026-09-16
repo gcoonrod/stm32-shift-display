@@ -11,6 +11,51 @@
 #include <Arduino.h>
 #include "./ShiftDisplay.h"
 
+/**
+ * Inter-edge throttle for the shift clock.
+ *
+ * Six 74HC595s on 3.3 V: the family is characterised at 4.5 V, and for a chain
+ * this deep the binding constraint is each stage's serial propagation delay plus
+ * the next stage's setup time, six times over. An unthrottled BSRR loop clocks
+ * at roughly 9-12 MHz, which may be past that edge -- and the far end of the
+ * chain is not wired back, so a marginal rate shows up only as the occasional
+ * wrong segment.
+ *
+ * The value is established by measurement on the assembled board, not by
+ * calculation. It does not need to be precise, only monotonic: more NOPs means
+ * a slower clock. Build with -D SHIFT_SWEEP to make it settable at runtime so
+ * the failure point can be found without reflashing for every step.
+ */
+#ifndef SHIFT_EDGE_NOPS
+#define SHIFT_EDGE_NOPS 0
+#endif
+
+#ifdef SHIFT_SWEEP
+volatile uint8_t shift_edge_nops = SHIFT_EDGE_NOPS;
+#define SHIFT_EDGE_DELAY()                              \
+    do                                                  \
+    {                                                   \
+        for (uint8_t _n = 0; _n < shift_edge_nops; _n++) \
+        {                                               \
+            __asm__ volatile("nop");                    \
+        }                                               \
+    } while (0)
+#elif SHIFT_EDGE_NOPS > 0
+#define SHIFT_EDGE_DELAY()                                 \
+    do                                                     \
+    {                                                      \
+        for (uint32_t _n = 0; _n < SHIFT_EDGE_NOPS; _n++)  \
+        {                                                  \
+            __asm__ volatile("nop");                       \
+        }                                                  \
+    } while (0)
+#else
+#define SHIFT_EDGE_DELAY() \
+    do                     \
+    {                      \
+    } while (0)
+#endif
+
 #define DP_BP 1
 #define DP_BM 0b00000001
 #define GET_BIT(byte, bit) (((byte) >> (bit)) & 0x01)
@@ -123,9 +168,9 @@ ShiftDisplay::ShiftDisplay(uint16_t data, uint16_t sclk, uint16_t sclr, uint16_t
     _output_en_pin = oe;
     _initialized = false;
     _delay_us = 0;
-    _delay_ms = 0;
     _brightness = 0;
     _max_duty = 255;
+    _same_port = false;
 }
 
 void ShiftDisplay::update_buffer(const char *new_content)
@@ -199,6 +244,32 @@ void ShiftDisplay::begin(uint32_t delay_us, uint16_t max_duty)
     // ~OE belongs to the timer from here on. Nothing may digitalWrite this pin:
     // doing so reconfigures it away from its alternate function and silently
     // stops the brightness control, blanking or stranding the whole display.
+    // Resolve each pin to its port and BSRR words once, here, so the inner loop
+    // never repeats the lookup. begin() is also where the pins are known to be
+    // configured, having just been through pinMode above.
+    PinName data = digitalPinToPinName(_serial_data_pin);
+    PinName clk = digitalPinToPinName(_serial_clk_pin);
+    PinName srclr = digitalPinToPinName(_serial_clr_pin);
+    PinName latch = digitalPinToPinName(_latch_clk_pin);
+
+    _data_port = set_GPIO_Port_Clock(STM_PORT(data));
+    _clk_port = set_GPIO_Port_Clock(STM_PORT(clk));
+    _clr_port = set_GPIO_Port_Clock(STM_PORT(srclr));
+    _latch_port = set_GPIO_Port_Clock(STM_PORT(latch));
+
+    _data_set = STM_GPIO_PIN(data);
+    _data_clr = _data_set << 16;
+    _clk_set = STM_GPIO_PIN(clk);
+    _clk_clr = _clk_set << 16;
+    _srclr_set = STM_GPIO_PIN(srclr);
+    _srclr_clr = _srclr_set << 16;
+    _latch_set = STM_GPIO_PIN(latch);
+    _latch_clr = _latch_set << 16;
+
+    _same_port = (_data_port == _clk_port);
+    _bit1_clklow = _data_set | _clk_clr;
+    _bit0_clklow = _data_clr | _clk_clr;
+
     _max_duty = max_duty;
     _brightness = 0;
     write_output_enable(0); // start blank, as the 10k pull-up already does
@@ -242,27 +313,31 @@ void ShiftDisplay::shiftOutByte(uint8_t byte, bool dp)
     {
         SET_BIT(byte, DP_BM);
     }
-    for (uint8_t i = 0; i < 8; i++)
+    if (_same_port)
     {
-        // Set serial data bit
-        digitalWrite(_serial_data_pin, !!(byte & (1 << i)));
-        if (_delay_us > 0)
+        for (uint8_t i = 0; i < 8; i++)
         {
-            delayMicroseconds(_delay_us);
-        }
-
-        // Pulse the serial clock
-        digitalWrite(_serial_clk_pin, HIGH);
-        if (_delay_us > 0)
-        {
-            delayMicroseconds(_delay_us);
-        }
-        digitalWrite(_serial_clk_pin, LOW);
-        if (_delay_us > 0)
-        {
-            delayMicroseconds(_delay_us);
+            // One store presents the bit and holds the clock low.
+            _data_port->BSRR = (byte & (1u << i)) ? _bit1_clklow : _bit0_clklow;
+            SHIFT_EDGE_DELAY();
+            _data_port->BSRR = _clk_set; // rising edge shifts it in
+            SHIFT_EDGE_DELAY();
         }
     }
+    else
+    {
+        for (uint8_t i = 0; i < 8; i++)
+        {
+            _data_port->BSRR = (byte & (1u << i)) ? _data_set : _data_clr;
+            _clk_port->BSRR = _clk_clr;
+            SHIFT_EDGE_DELAY();
+            _clk_port->BSRR = _clk_set;
+            SHIFT_EDGE_DELAY();
+        }
+    }
+
+    // Leave the clock idling low, as the digitalWrite version did.
+    _clk_port->BSRR = _clk_clr;
 }
 
 void ShiftDisplay::shiftOutAscii(char ascii, bool dp)
@@ -291,44 +366,26 @@ void ShiftDisplay::disable()
 
 void ShiftDisplay::clear()
 {
-    // Clear the shift register
-    digitalWrite(_serial_clr_pin, LOW);
-    if (_delay_us)
-    {
-        delayMicroseconds(_delay_us);
-    }
-    digitalWrite(_serial_clr_pin, HIGH);
-    if (_delay_us)
-    {
-        delayMicroseconds(_delay_us);
-    }
+    // Clear the shift register (~SRCLR is active low)
+    _clr_port->BSRR = _srclr_clr;
+    SHIFT_EDGE_DELAY();
+    _clr_port->BSRR = _srclr_set;
+    SHIFT_EDGE_DELAY();
 
     // Latch the cleared register
-    digitalWrite(_latch_clk_pin, LOW);
-    if (_delay_us)
-    {
-        delayMicroseconds(_delay_us);
-    }
-    digitalWrite(_latch_clk_pin, HIGH);
-    if (_delay_us)
-    {
-        delayMicroseconds(_delay_us);
-    }
+    _latch_port->BSRR = _latch_clr;
+    SHIFT_EDGE_DELAY();
+    _latch_port->BSRR = _latch_set;
+    SHIFT_EDGE_DELAY();
 }
 
 void ShiftDisplay::latch()
 {
     // Latch the shift register
-    digitalWrite(_latch_clk_pin, LOW);
-    if (_delay_us)
-    {
-        delayMicroseconds(_delay_us);
-    }
-    digitalWrite(_latch_clk_pin, HIGH);
-    if (_delay_us)
-    {
-        delayMicroseconds(_delay_us);
-    }
+    _latch_port->BSRR = _latch_clr;
+    SHIFT_EDGE_DELAY();
+    _latch_port->BSRR = _latch_set;
+    SHIFT_EDGE_DELAY();
 }
 
 inline size_t ShiftDisplay::write(uint8_t value)
