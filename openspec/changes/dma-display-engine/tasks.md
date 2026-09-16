@@ -46,18 +46,33 @@
 - [ ] 6.5 Watch a dimmed digit for a spell at several global brightness levels, looking for beat or shimmer that is not commanded
 - [ ] 6.6 Confirm the global brightness setting still dims everything together and keeps the relative proportions, and that a digit at full relative brightness is no brighter than the global minimum allows
 
-## 7. Verification
+## 7. The menu-exit fade
 
-- [ ] 7.1 Diff the serial command output against a golden capture taken before the change; nothing outside the display should have moved
-- [ ] 7.2 Exercise the full glyph set in all six positions and confirm no intermittent wrong segments, using the all-segments and six-distinct-digits patterns rather than the time
-- [ ] 7.3 Confirm the alarm flash and the field-edit blink still render, since both drive the display harder than the idle path
-- [ ] 7.4 Walk the menu and confirm every label renders
-- [ ] 7.5 Confirm the leading hour zero is still blanked in 12-hour mode and still present in 24-hour mode — this change must not disturb behaviour that already shipped
-- [ ] 7.6 Record final flash and RAM against the baseline, and state the buffer's share of RAM
-- [ ] 7.7 Update `CLAUDE.md` where it describes the display pipeline, which currently says the shift loop is two stores per bit driven by the CPU
-- [ ] 7.8 Update `docs/DEVELOPMENT.md` with the timer, the two DMA channels, the derived constants and the reason the slice period is locked to the output-enable period
-- [ ] 7.9 Run `openspec validate dma-display-engine`
+- [ ] 7.1 Add the transition detection: compare the state either side of `stateMachine.update()` and recognise `MENU`/`EDIT` → `IDLE`, so backing out, committing and timing out all trigger alike
+- [ ] 7.2 Confirm `FIRING` → `IDLE` does not trigger it — dismissing an alarm shows the time at once
+- [ ] 7.3 Add the fade stepper as its own call in the loop tail alongside `update_leds()`, driven from `millis()` against a start stamp rather than by counting steps
+- [ ] 7.4 Confirm `render()` is untouched and nothing is re-shifted for the fade; the `time_dirty` path must stay exactly as cheap as it is
+- [ ] 7.5 Wire the per-position ramp: position *p* starts at `p × STAGGER` and reaches full over `FADE`
+- [ ] 7.6 Add the abort: any button press, menu re-entry or alarm fire snaps every position to full immediately
+- [ ] 7.7 Add a build-flagged serial command to trigger the fade without walking the menu, so it can be watched repeatedly; confirm it is absent from the production image
+- [ ] 7.8 Watch the fade and judge whether 8 levels reads as a flourish or as steps. If it steps, work the remedies in the design's order — N = 16 first — and record which was needed and why
+- [ ] 7.9 Confirm the fade ends at the configured brightness at every level including the minimum, and that a digit is never left dim by any exit path
+- [ ] 7.10 Confirm the blanked leading position stays blank throughout in 12-hour mode, and that the remaining digits keep their timing
+- [ ] 7.11 Hold the loop busy mid-fade and confirm the fade shortens rather than stretching
+- [ ] 7.12 Tune `STAGGER` and `FADE` by eye from the 70 ms / 180 ms starting point, and record the values chosen
 
-## 8. Deferred, deliberately
+## 8. Verification
 
-- [ ] 8.1 Decide whether per-digit levels should persist in backup registers, once there is something to judge by eye
+- [ ] 8.1 Diff the serial command output against a golden capture taken before the change; nothing outside the display should have moved
+- [ ] 8.2 Exercise the full glyph set in all six positions and confirm no intermittent wrong segments, using the all-segments and six-distinct-digits patterns rather than the time
+- [ ] 8.3 Confirm the alarm flash and the field-edit blink still render, since both drive the display harder than the idle path
+- [ ] 8.4 Walk the menu and confirm every label renders
+- [ ] 8.5 Confirm the leading hour zero is still blanked in 12-hour mode and still present in 24-hour mode — this change must not disturb behaviour that already shipped
+- [ ] 8.6 Record final flash and RAM against the baseline, and state the buffer's share of RAM
+- [ ] 8.7 Update `CLAUDE.md` where it describes the display pipeline, which currently says the shift loop is two stores per bit driven by the CPU
+- [ ] 8.8 Update `docs/DEVELOPMENT.md` with the timer, the two DMA channels, the derived constants, the reason the slice period is locked to the output-enable period, and the fade's tuned timings
+- [ ] 8.9 Run `openspec validate dma-display-engine`
+
+## 9. Deferred, deliberately
+
+- [ ] 9.1 Decide whether per-digit levels should persist in backup registers, once there is something to judge by eye

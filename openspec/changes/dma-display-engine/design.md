@@ -38,6 +38,8 @@ and replayed by a peripheral, where nothing in the instruction stream shows the 
 - Make per-digit brightness possible by modulating the data rather than `~OE`.
 - Set the bit clock to an exact, chosen frequency rather than an emergent one.
 - Leave global `~OE` brightness working exactly as it does today.
+- Demonstrate per-digit brightness with one visible behaviour: returning from the menu
+  fades the digits in, left to right.
 
 **Non-Goals:**
 
@@ -158,6 +160,77 @@ Note this is a *linear* 8-step scale, not the gamma-mapped 8 the `~OE` levels us
 levels will bunch at the top perceptually. That is acceptable for relative dimming of one
 digit against the others; it is not a second user-facing brightness control.
 
+### The menu-exit fade
+
+Per-digit brightness needs a consumer, and this is it: leaving the menu, the six positions
+come up one at a time from the left rather than all at once.
+
+**It rides alongside the render path, not inside it.** `render()` deliberately rewrites
+content only when `time_dirty` says it changed — an existing requirement, not an
+optimisation to be traded away. The fade changes *brightness*, and per-digit levels are
+separate from glyph content, so it runs as its own step in the main loop next to
+`update_leds()` and `update_display_brightness()`. Nothing is recomputed or re-shifted for
+it.
+
+**The trigger is a transition, not a state.** `stateMachine.update()` commits the new state
+at the top of the loop tail; comparing the state before and after it identifies a move into
+`IDLE` from `MENU` or `EDIT`. All three routes home — backing out, committing, timing out —
+go through that same transition, so all three fade with no special-casing.
+
+`FIRING` → `IDLE` deliberately does not. Dismissing an alarm is not a moment to make someone
+wait half a second for the time.
+
+**Shape:** position *p* starts at `p × STAGGER` and ramps to full over `FADE`. Starting
+points to tune by eye:
+
+```
+  STAGGER 70 ms, FADE 180 ms  ->  total 5x70 + 180 = 530 ms
+
+  pos 0  ####----
+  pos 1    ####----
+  pos 2      ####----
+  pos 3        ####----
+  pos 4          ####----
+  pos 5            ####----
+```
+
+Driven from `millis()` against a start stamp, so a slow loop pass skips levels rather than
+stretching the fade — the same discipline the breathing LED uses.
+
+**The step problem, stated plainly.** There are only N = 8 linear slice levels. Perceived
+brightness goes roughly as the 2.2nd root, so of the whole perceptual range the step from
+*off* to *one slice* is about 40% of it, and every step above that is 14% or less. A fade
+therefore always has one conspicuous jump: the moment the digit appears.
+
+Speed is what hides it. Eight levels over 180 ms is ~44 steps/second, and the eye resolves
+quantisation far worse in motion than in the slow, near-static breath that had to be fixed
+with 12-bit PWM and a gamma curve earlier in this firmware. Worth noting that the instinct
+carried over from that fix — *slow it down to smooth it* — is backwards here: a slower fade
+gives the eye longer on each level and makes the steps **more** visible, not less.
+
+If it still reads badly, the remedies in order of cost:
+
+1. **N = 16** — 3072 B and a 250 Hz frame, for 16 levels. Halves every step.
+2. **Ramp global `~OE` alongside the stagger** — 4096 fine steps multiplying the coarse
+   per-digit ones, which would smooth the appearance moment specifically. Costs the
+   complication that global brightness is transiently not the user's setting, and must be
+   guaranteed to land back on it.
+3. **Temporal dither** between adjacent slice counts across frames — more effective levels,
+   at the cost of a 250 Hz modulation at 1/8 amplitude, which is the sort of thing the
+   no-visible-flicker requirement exists to catch.
+
+None of these is built speculatively. The fade ships at N = 8 and gets looked at.
+
+**Interruption snaps to full, it does not reverse.** A button press, a re-entry to the menu,
+or an alarm firing abandons the fade and sets every position to full immediately. Anything
+else risks entering the menu with half-dim digits, which reads as a fault rather than a
+flourish.
+
+**Blank positions are not special-cased.** In 12-hour mode the leading position holds a
+space, so its slot in the sequence lights nothing. Keeping the slot means the rhythm is
+identical in 12- and 24-hour modes; skipping it would make the fade subtly different
+between them for no gain. Stated here because it looks like an oversight and is not.
+
 ### Timer choice: TIM1, with TIM3 as the fallback
 
 TIM1 and TIM3 are both unused, and both can reach two DMA channels:
@@ -245,7 +318,11 @@ Nothing in the clock's normal appearance changes at any step. Rollback is the bu
   position is undecided, and deliberately left out of the specs until the feature exists to
   judge.
 
-- **What consumes this?** With the hour digit dropped, the engine has no named user-visible
-  feature behind it — its case rests on CPU-free refresh, an exactly specified bit clock,
-  and per-digit brightness as a capability. That is a legitimate case, but it should be made
-  knowingly rather than inherited from a use that no longer applies.
+- **Do 8 levels make an attractive fade?** The fade is the answer to what consumes per-digit
+  brightness, but whether it looks like a flourish or like a stepped artefact is the one
+  thing that cannot be settled on paper. The remedies are ranked in the decision above;
+  which, if any, is needed is a question for the hardware.
+
+- **Should the fade also run at power-on?** It would suit a clock, and costs nothing beyond
+  one more trigger. Left out because it was not asked for, and because boot already has
+  enough going on that a flourish there could mask a fault.

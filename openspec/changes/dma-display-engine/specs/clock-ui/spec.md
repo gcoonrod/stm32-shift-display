@@ -69,6 +69,51 @@ The timer constants that establish this relationship SHALL be derived at build t
 - **WHEN** the output-enable PWM frequency is changed and the slice period would no longer contain a whole number of output-enable periods
 - **THEN** the build fails, rather than producing firmware with per-digit brightness errors
 
+### Requirement: Returning to the clock from the menu fades the digits in
+When the display returns to the idle time display from the menu or an editor, the digits SHALL fade in one at a time, left to right, rather than appearing at once. This SHALL apply whether the return was by backing out, by committing an edit, or by the inactivity timeout.
+
+The fade SHALL be driven by elapsed time rather than by counting steps, so that a delayed pass through the main loop shortens the fade rather than stretching it.
+
+The fade SHALL change brightness only. The displayed content SHALL NOT be recomputed or re-shifted on its account.
+
+The fade SHALL always end with every character position at full relative brightness and the display at the configured global brightness. If anything interrupts it — a button press, a re-entry to the menu, an alarm firing — it SHALL be abandoned and every position returned to full immediately, so that no path can leave a digit dim.
+
+#### Scenario: Backing out of the menu fades in
+- **WHEN** the menu is backed out of and the display returns to the time
+- **THEN** the digits appear one at a time from left to right, and all six are at full brightness when the fade completes
+
+#### Scenario: Committing an edit fades in
+- **WHEN** an editor's last field is advanced past and the value is committed
+- **THEN** the display returns to the time with the same fade
+
+#### Scenario: Timing out fades in
+- **WHEN** the inactivity timeout returns the display to the time
+- **THEN** the display returns with the same fade
+
+#### Scenario: Dismissing an alarm does not fade
+- **WHEN** a firing alarm is dismissed and the display returns to the time
+- **THEN** the time is shown at once, at full brightness, with no fade
+
+#### Scenario: Interrupting the fade does not strand a dim digit
+- **WHEN** a button is pressed, the menu is re-entered, or an alarm fires while the fade is running
+- **THEN** the fade is abandoned and every character position is at full relative brightness immediately
+
+#### Scenario: The fade ends at the user's brightness, not above or below it
+- **WHEN** the fade completes at any configured display brightness, including the minimum
+- **THEN** the display is at exactly the brightness it would have been had there been no fade
+
+#### Scenario: A blanked position stays blank through the fade
+- **WHEN** the leading hour position is blank in 12-hour mode and the fade runs
+- **THEN** nothing appears at that position at any point in the fade, and the remaining digits keep their timing
+
+#### Scenario: The fade does not recompute content
+- **WHEN** the fade is running and the time has not changed
+- **THEN** the displayed characters are not recomputed or re-shifted, so the idle path stays as cheap as it is today
+
+#### Scenario: A slow loop shortens the fade rather than stretching it
+- **WHEN** the main loop is delayed during a fade
+- **THEN** the fade reaches full brightness at the time it would have anyway, skipping intermediate levels rather than running long
+
 ## MODIFIED Requirements
 
 ### Requirement: Display brightness is user-settable
@@ -167,3 +212,24 @@ Where the rate is set by a timer rather than by instruction timing, it SHALL be 
 #### Scenario: A timer-set rate is exact
 - **WHEN** the shift clock is produced by a timer
 - **THEN** its frequency follows from the core clock and the timer's reload value, and is stated as a number rather than estimated from instruction counts
+
+### Requirement: The display shows the current time at rest
+When not in a menu, the display SHALL show the current time of day and SHALL update as the time advances. It SHALL be shown at the configured display brightness.
+
+"At rest" excludes the brief fade that runs when the display returns from the menu. During that fade the digits are deliberately unequal in brightness; once it completes, they SHALL be equal again.
+
+#### Scenario: Time is displayed and advances
+- **WHEN** the device is powered and not in a menu
+- **THEN** the display shows hours, minutes, and seconds, and the seconds change once per second
+
+#### Scenario: Redraw is driven by the RTC, not by polling
+- **WHEN** the time has not changed since the last redraw
+- **THEN** the displayed content is not recomputed, so the idle path stays as cheap as it is today
+
+#### Scenario: Shown at the configured brightness
+- **WHEN** the display is showing the time and no fade is running
+- **THEN** every lit segment is at the configured display brightness, and all six digits are equally bright
+
+#### Scenario: Brightness and content are independent
+- **WHEN** the brightness changes
+- **THEN** the displayed characters are unaffected — nothing is re-shifted, no digit flickers or glitches, and the decimal point keeps its state

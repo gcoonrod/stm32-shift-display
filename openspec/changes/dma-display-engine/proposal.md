@@ -50,6 +50,10 @@ brightness and the indicator LEDs and stay untouched.
   rather than a consequence of what the compiler emitted.
 - Global `~OE` brightness stays as it is. Per-digit brightness multiplies with it rather
   than replacing it.
+- One visible behaviour demonstrates the mechanism: **leaving the menu fades the digits in
+  one at a time, left to right**, instead of the time snapping back all at once. It is the
+  answer to "what is per-digit brightness actually for" — a capability with nothing using it
+  is hard to judge and easy to get subtly wrong without noticing.
 
 ## What this costs
 
@@ -86,7 +90,8 @@ _None._
 
 - **Firmware**: `firmware/lib/ShiftDisplay/` substantially — the driver stops shifting bits
   and starts maintaining a waveform buffer. `firmware/src/main.cpp` where brightness and
-  rendering meet.
+  rendering meet, plus the loop tail where the menu-exit transition is detected and the fade
+  is stepped.
 - **Peripherals**: claims a timer (TIM1 or TIM3) and two DMA1 channels. None is used today,
   and TIM2/TIM4 are deliberately left alone.
 - **RAM**: 0.8–3.0 KB depending on slice count, against 15.6 KB free.
