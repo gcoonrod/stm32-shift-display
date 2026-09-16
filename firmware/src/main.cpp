@@ -100,6 +100,7 @@ void cmd_wave_rate(SerialCommands *sender);
 void cmd_wave_engine(SerialCommands *sender);
 void cmd_wave_block(SerialCommands *sender);
 void cmd_wave_reset(SerialCommands *sender);
+void cmd_wave_tear(SerialCommands *sender);
 #endif
 void cmd_set_disp(SerialCommands *sender);
 
@@ -136,6 +137,7 @@ SerialCommand cmd_wave_rate_("WR", cmd_wave_rate);
 SerialCommand cmd_wave_engine_("WE", cmd_wave_engine);
 SerialCommand cmd_wave_block_("WB", cmd_wave_block);
 SerialCommand cmd_wave_reset_("WX", cmd_wave_reset);
+SerialCommand cmd_wave_tear_("WT", cmd_wave_tear);
 #endif
 
 STM32RTC &rtc = STM32RTC::getInstance();
@@ -363,6 +365,7 @@ void setup()
   serial_commands_.AddCommand(&cmd_wave_engine_);
   serial_commands_.AddCommand(&cmd_wave_block_);
   serial_commands_.AddCommand(&cmd_wave_reset_);
+  serial_commands_.AddCommand(&cmd_wave_tear_);
 #endif
 
   last_activity_ms = millis();
@@ -1768,6 +1771,59 @@ void cmd_wave_level(SerialCommands *sender)
  */
 /* Reset on demand, so "what does the display do coming up" is a repeatable
    observation rather than something glimpsed during a reflash. */
+/**
+ * Rebuild the waveform as fast as possible, repeatedly, and time it.
+ *
+ * Two things at once. The number says how long the DMA spends reading a buffer
+ * that is being rewritten underneath it -- the tearing window. The burst is the
+ * test: rebuilding thousands of times a second is far past anything the clock
+ * will ever do, so if a mid-frame rewrite can produce something worse than a
+ * momentary tear, this is where it appears.
+ *
+ * Each word is a single aligned 32-bit store, so no half-written word can ever
+ * be read. The worst available outcome is some digits from the old content and
+ * some from the new, for one frame.
+ */
+void cmd_wave_tear(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+  char *arg = sender->Next();
+  uint32_t n = (arg == NULL) ? 2000UL : (uint32_t)atol(arg);
+
+  if (n > 20000UL)
+  {
+    n = 20000UL;
+  }
+
+  uint8_t keep[6];
+  for (uint8_t i = 0; i < 6; i++)
+  {
+    keep[i] = display.getDigitLevel(i);
+  }
+
+  uint32_t t0 = micros();
+  for (uint32_t i = 0; i < n; i++)
+  {
+    // Alternate the levels so the content genuinely changes every rebuild.
+    display.setDigitLevel(0, (i & 1) ? keep[0] : (uint8_t)(keep[0] / 2 + 1));
+  }
+  uint32_t dt = micros() - t0;
+
+  for (uint8_t i = 0; i < 6; i++)
+  {
+    display.setDigitLevel(i, keep[i]);
+  }
+
+  out->print("rebuilds=");
+  out->print(n);
+  out->print(" us_total=");
+  out->print(dt);
+  out->print(" ns_each=");
+  out->print((uint32_t)((uint64_t)dt * 1000ULL / n));
+  out->print(" frame_us=");
+  out->println(1000000UL / SHIFT_ENGINE_FRAME_HZ);
+}
+
 void cmd_wave_reset(SerialCommands *sender)
 {
   sender->GetSerial()->println("resetting");
