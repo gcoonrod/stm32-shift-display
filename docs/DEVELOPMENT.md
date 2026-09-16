@@ -58,6 +58,31 @@ with `** Verified OK **` and `** Resetting Target **`.
 > **Do not pipe `pio run` through `tee`.** The exit status you get back is `tee`'s,
 > so a failed build looks like a success. Redirect instead: `pio run > build.log 2>&1`.
 
+### Flash budget
+
+`./scripts/check-dev-env.sh` reports usage and headroom from the last build. Note it reads a
+few hundred bytes higher than PlatformIO's build line, which counts only `.text`, `.data`
+and `.rodata` and omits the vector table and the init arrays — those occupy flash too.
+
+The `reduce-flash-footprint` change took usage from **53,924 bytes (82.3%)** to **36,832
+(56.2%)** as PlatformIO counts it, without altering behaviour:
+
+| | bytes saved |
+| --- | --- |
+| integer date arithmetic in place of `localtime`/`mktime` | 8,788 |
+| `print()` in place of `Print::printf` | 3,632 |
+| link-time optimisation | 4,672 |
+| **total** | **17,092** |
+
+The first figure is the one worth understanding. `localtime()` reaches `tzset`, which reaches
+`sscanf` to parse a `TZ` string this firmware never sets, which drags in the whole
+formatted-input engine — and `assert` → `fprintf` hung off the same chain. Roughly 8.8 KB for
+a conversion that is forty lines of integer arithmetic.
+
+`-flto` is enabled in `platformio.ini`. It was adopted on evidence rather than by default:
+it saved 4,672 bytes and the board passed the same verification as every other stage,
+including the RTC seconds interrupt, which is the sort of thing LTO can quietly break.
+
 ### Why the platform version is constrained
 
 `firmware/platformio.ini` sets `platform = ststm32@^20.0.0` — a range, not a pin. The
@@ -358,9 +383,6 @@ opening the board in KiCad, so it is left for whenever the hardware is next touc
 Verified in the current source and deliberately **not** fixed by the environment pass,
 so that "the unchanged firmware still builds and flashes" stayed a usable signal:
 
-- **Month off by one over the wire.** `cmd_set_time()` passes `tm_mon` (0–11) straight
-  to `rtc.setMonth()` (1–12), and `cmd_get_time()` reads it back without the inverse
-  correction. `ST` followed by `GT` does not round-trip the date.
 - **`timesync.py` writes the clock without `-U`.** The guard is
   `abs(skew) > 1 & args.update`, which binds as `abs(skew) > (1 & args.update)`. With
   `-U` absent that is `abs(skew) > 0`, so any nonzero skew triggers a write. Running
@@ -368,8 +390,23 @@ so that "the unchanged firmware still builds and flashes" stayed a usable signal
 - **A bad `--com` port raises `UnboundLocalError`.** `get_device_time()` and
   `set_device_time()` reference `ser` in their `finally` blocks, which is unbound when
   `serial.Serial()` itself raises, masking the real `SerialException`.
-- **No DST on the device.** The offset is applied by adding seconds around `mktime`.
-  The host script compensates; anything else talking to the board does not.
+- **No DST on the device.** The timezone offset is applied as a fixed number of seconds
+  either side of the date conversion. The host script compensates; anything else talking
+  to the board does not.
+
+### Fixed, and what the old description got wrong
+
+The month *was* recorded here as "off by one over the wire — `ST` followed by `GT` does not
+round-trip the date". That description was wrong in an interesting way: `ST` → `GT` always
+round-tripped, verified across ten timestamps including leap days and year boundaries. The
+same offset was applied on both sides, so the serial path was self-consistent.
+
+The actual fault was that the two paths which set the month disagreed with *each other* —
+`ST` stored 0–11, the menu editor stored 1–12 — so a date set in one place read back a month
+out in the other, while any test confined to a single path looked perfect. That is also why
+`timesync` reporting zero skew never revealed it.
+
+Month is now 1–12 everywhere, converted only where a `tm`-shaped value is produced.
 
 ## Unimplemented
 

@@ -93,6 +93,31 @@ else
 fi
 
 echo
+echo "Flash budget"
+
+FLASH_MAX=65536
+ELF="$REPO/firmware/.pio/build/bluepill_f103c8_128k/firmware.elf"
+SIZE_TOOL="$(ls "$HOME"/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-size 2>/dev/null | head -1)"
+
+if [ -f "$ELF" ] && [ -x "$SIZE_TOOL" ]; then
+  # text + data is what lands in flash; bss is RAM only.
+  read -r _text _data _rest <<EOF
+$("$SIZE_TOOL" "$ELF" | tail -1)
+EOF
+  used=$((_text + _data))
+  pct=$((used * 100 / FLASH_MAX))
+  free=$((FLASH_MAX - used))
+  ok "flash ${used} of ${FLASH_MAX} bytes (${pct}%), ${free} free"
+  note "from the last build, not a fresh one -- run 'pio run -d firmware' first if in doubt"
+  note "a few hundred bytes above PlatformIO's build line, which counts only"
+  note ".text/.data/.rodata and omits the vector table and init arrays"
+elif [ ! -f "$ELF" ]; then
+  note "no build to measure yet; run 'pio run -d firmware'"
+else
+  note "size tool not found; cannot report flash usage"
+fi
+
+echo
 if [ "$gaps" -eq 0 ]; then
   echo "Ready: build with 'pio run -d firmware', flash with 'pio run -d firmware -t upload'."
   exit 0
