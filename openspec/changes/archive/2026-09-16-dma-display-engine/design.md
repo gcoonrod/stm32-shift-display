@@ -1,0 +1,418 @@
+## Context
+
+The display is driven by six daisy-chained 74HC595s on a single 48-bit chain. Since
+`bsrr-shift-out`, the CPU clocks all 48 bits out by hand — two stores per bit into
+`GPIOA->BSRR`, roughly 100 stores per redraw — and it does this only when `time_dirty`
+says something changed. Brightness comes from TIM2 PWM on `~OE` (PA0), which is one net
+across all six registers, so it dims every digit together.
+
+The pins are all on GPIOA:
+
+```
+  PA0  ~OE     TIM2_CH1, PWM brightness  -- NOT ours to write
+  PA1  ~SRCLR  active low
+  PA2  RCLK    latch
+  PA3  SER     data
+  PA4  SRCLK   bit clock
+```
+
+Two constraints follow from that map and shape everything below.
+
+**There is no byte-oriented peripheral available.** SPI1 is SCK/MOSI on PA5/PA7; the
+remap puts it on PB3/PB4/PB5, which are the three buttons. `SER` and `SRCLK` are on PA3
+and PA4, which are SPI1_NSS and nothing. The board wires the shift registers to plain
+GPIO, so the waveform has to be synthesized edge by edge. That is the single fact that
+makes this change expensive rather than trivial — an SPI-wired board would need a
+16-word buffer and one DMA channel.
+
+**`~OE` shares the port.** Every word the DMA writes to `GPIOA->BSRR` is a word that
+could reach across PA0 and blank the display or fight TIM2 for the pin. The existing
+"address only the pins you own" rule now has to hold for words computed at build time
+and replayed by a peripheral, where nothing in the instruction stream shows the mistake.
+
+## Goals / Non-Goals
+
+**Goals:**
+
+- Refresh the display continuously from a peripheral, with the CPU uninvolved.
+- Make per-digit brightness possible by modulating the data rather than `~OE`.
+- Set the bit clock to an exact, chosen frequency rather than an emergent one.
+- Leave global `~OE` brightness working exactly as it does today.
+- Demonstrate per-digit brightness with one visible behaviour: returning from the menu
+  fades the digits in, left to right.
+
+**Non-Goals:**
+
+- Per-*segment* brightness. The mechanism allows it; nothing asks for it yet.
+- Replacing `analogWrite` on `~OE`. TIM2 keeps the pin.
+- Changing what the display shows. Only how brightly individual digits show it.
+- Dimming the leading hour digit in 12-hour mode. The proposal named this as the first
+  use; it has since been dropped. `blank-leading-hour-zero` shipped the blank, the blank
+  is the better result, and it is now a `clock-ui` requirement. This change leaves it
+  alone.
+
+## Decisions
+
+### Two DMA channels, not one
+
+The obvious construction is one channel and one word per edge: 96 words per pass over
+the chain. Half of those words are the same constant — `SRCLK` high — because the rising
+edge carries no data.
+
+So: two channels off the same timer, both writing `GPIOA->BSRR`.
+
+| | Trigger | DMA1 ch | Memory increment | Writes |
+|---|---|---|---|---|
+| Data | TIM1_CH1 compare | 2 | **on** | `SER` set-or-clear \| `SRCLK` clear |
+| Clock | TIM1_CH2 compare | 3 | **off** | `SRCLK` set (one constant word) |
+
+The clock channel reads the same word forever, so it costs four bytes regardless of
+buffer length. That halves the waveform to **48 words per slice**.
+
+*Alternative considered:* one channel, 96 words per slice. Simpler to reason about and
+one less peripheral to configure, but it doubles the buffer — the dominant cost of this
+whole change — to save a channel that is otherwise idle. Rejected.
+
+### Latch the previous slice, so latching costs nothing
+
+`RCLK` has to pulse once per 48 bits. Appending latch words to the stream does not work:
+the clock channel keeps firing during them, and extra clocks push data off the end of a
+chain that is exactly as long as the data.
+
+Instead the `RCLK` bits ride inside the data words. Word 0 of each slice carries
+`RCLK` set alongside its data bit; word 1 carries `RCLK` clear. The rising edge at the
+start of slice *k+1* latches what slice *k* shifted in.
+
+```
+   slice k        slice k+1      slice k+2
+  [48 words]     [48 words]     [48 words]
+   |              |              |
+   |              RCLK^          RCLK^      <- latches the PREVIOUS slice
+   |              shows slice k  shows k+1
+```
+
+The display runs one slice behind. The stream is circular and never ends, so "one slice
+behind" is not a state anything can observe — at 500 Hz it is 2 ms of constant offset.
+
+*Alternative considered:* a third DMA channel on TIM1_CH3 (DMA1 ch 6) pulsing `RCLK`.
+More moving parts, another channel, another compare to phase correctly, for a problem
+that two spare bits in an existing word already solve.
+
+### The slice period is exactly one `~OE` PWM period
+
+This is the decision that makes the two brightness mechanisms compose instead of fight,
+and it is worth stating why the obvious alternatives are worse.
+
+Data-path dimming and `~OE` dimming are two modulations multiplying. If their periods
+are unrelated, the phase between them drifts, and any near-coincidence of harmonics
+produces a slow beat — 4 kHz `~OE` against a 1001 Hz frame rate gives a visible 4 Hz
+flutter. If they are locked but a slice spans only a fraction of an `~OE` period, each
+digit's slices land at a fixed `~OE` phase and get a systematically wrong share of the
+on-time — a per-digit brightness error that never averages out, which is worse than
+flutter because it looks like a hardware fault.
+
+Both problems disappear if **a slice contains a whole number of `~OE` periods**. Then
+every slice carries exactly the same `~OE` on-time, whatever the phase, and a digit lit
+in *k* of *N* slices is exactly *k/N* as bright. No phase term survives.
+
+The arithmetic lands on one period exactly, which is a pleasant accident of the existing
+constants:
+
+```
+  ~OE:  4 kHz from TIM2 at 48 MHz          -> 12000 counts per period
+  TIM1: ARR+1 = 250, two compares per bit  ->   250 counts per bit
+        48 bits per slice                  -> 12000 counts per slice
+                                              ^^^^^ equal
+```
+
+**48 MHz, not 72.** This was written first at 72 MHz, which is what an F103 is usually
+assumed to run at; the board reports `SystemCoreClock == 48000000`, and the runtime guard
+found it before any peripheral was configured — the first flashed build answered `clkok=0`.
+It also means `docs/DEVELOPMENT.md`'s shift-rate figures from `bsrr-shift-out` were 72 MHz
+arithmetic and about 1.5x optimistic; corrected there.
+
+Less changes than it looks. The bit clock is `PWM_FREQ_HZ x 48` and the frame rate is
+`PWM_FREQ_HZ / slices`, both independent of the core clock, so both survive untouched. Only
+the reload and compare move — 374/187 becomes 249/125 — and the lock survives because
+48000000 / 4000 = 12000 still divides by 48 exactly.
+
+So with **TIM1 ARR = 249** (250 counts), CH1 compare near 0 and CH2 near 125:
+
+- bit clock **192 kHz** — a 28x margin under the ~5.3 MHz `bsrr-shift-out` ran at without
+  failure, and that 5.3 MHz is itself only a floor on the true limit, since no failure
+  point was found to measure back from
+- slice **250 µs**, exactly one `~OE` period
+- frame **500 Hz** at N = 8 slices, comfortably flicker-free
+
+Both timers count from the same 72 MHz, so the relationship is exact and permanent
+rather than nominal.
+
+**Measured, and it moved two arguments** (task 3.3/3.4). A CPU replay of the finished
+waveform, writing exactly the words the DMA will, runs one 8-slice frame in **111 µs** —
+9,011 frames/second flat out, a 3.46 MHz bit clock, reproducible to 1 µs across runs.
+
+That is 18x the 500 Hz the engine targets, and it is why the replay showed no flicker at
+all. Sustaining the target 500 Hz from the CPU would cost **5.5% of it**, not the whole
+loop. The proposal's framing — "doing that from the CPU means spending the loop on it
+forever" — is wrong, and the honest case for DMA is narrower: exact jitter-free timing that
+does not depend on what else the loop is doing, and CPU attention that does not have to be
+budgeted at all. Both are real. Neither is "the CPU cannot do this."
+
+**And the uniformity result does not validate the lock.** At 111 µs per frame a whole frame
+fits inside one 250 µs `~OE` period, so a replay slice is 13.9 µs — 5.5% of an `~OE`
+period, exactly the fraction-of-a-period case described above as the bad one. Six digits at
+4/8 nevertheless looked uniform, because the CPU replay is **free-running**: nothing locks
+it to `~OE`, the phase drifts continuously, and over the eye's integration time the error
+averages away. The DMA will avoid the same problem by the opposite means, locking so that
+the error never arises. Two mechanisms, same outcome — so uniformity under replay is
+evidence that per-digit dimming works, and no evidence at all about the lock. That stays
+unverified until the engine runs at 500 Hz.
+
+The consequence for the code: these numbers must be **derived from `PWM_FREQ_HZ` and the
+core clock at build time, not written down**. Someone re-tuning `~OE` frequency for the
+LEDs would otherwise silently break the lock, and the symptom would be a per-digit
+brightness error nobody would connect to the edit.
+
+One wrinkle found in implementation (task 2.1): **`F_CPU` on this core expands to
+`SystemCoreClock`, a runtime variable**, so nothing derived from it is a constant expression
+and none of this could have been checked at build time. The core clock is therefore a
+declared constant, `SHIFT_ENGINE_CORE_CLOCK_HZ`, with everything else derived from it and
+`PWM_FREQ_HZ`; `shift_engine_clock_ok()` checks the running system against it before the
+engine is allowed to start. It is the one relationship that has to be verified at runtime,
+and it is verified rather than assumed.
+
+### N = 8 slices
+
+Buffer size is `N × 48 × 4` bytes.
+
+| N | Buffer | Frame rate | Brightness steps |
+|---|---|---|---|
+| 4 | 768 B | 1000 Hz | 4 |
+| **8** | **1536 B** | **500 Hz** | **8** |
+| 16 | 3072 B | 250 Hz | 16 |
+
+8 is the pick: 1536 B is 7.5% of RAM, taking the build from 4,920 to about 6,456 bytes
+(24% → 32%), and 500 Hz is well clear of flicker. 16 doubles the cost and drops the frame
+rate to where flicker starts being arguable at the edge of vision. 4 keeps the frame rate
+high and the cost low, and is the fallback if 1536 B turns out to be wanted elsewhere; it
+is not the default only because four levels is a thin range to demonstrate the mechanism
+with.
+
+Note this is a *linear* 8-step scale, not the gamma-mapped 8 the `~OE` levels use. Per-digit
+levels will bunch at the top perceptually. That is acceptable for relative dimming of one
+digit against the others; it is not a second user-facing brightness control.
+
+### The menu-exit fade
+
+Per-digit brightness needs a consumer, and this is it: leaving the menu, the six positions
+come up one at a time from the left rather than all at once.
+
+**It rides alongside the render path, not inside it.** `render()` deliberately rewrites
+content only when `time_dirty` says it changed — an existing requirement, not an
+optimisation to be traded away. The fade changes *brightness*, and per-digit levels are
+separate from glyph content, so it runs as its own step in the main loop next to
+`update_leds()` and `update_display_brightness()`. Nothing is recomputed or re-shifted for
+it.
+
+**The trigger is a transition, not a state.** `stateMachine.update()` commits the new state
+at the top of the loop tail; comparing the state before and after it identifies a move into
+`IDLE` from `MENU` or `EDIT`. All three routes home — backing out, committing, timing out —
+go through that same transition, so all three fade with no special-casing.
+
+`FIRING` → `IDLE` deliberately does not. Dismissing an alarm is not a moment to make someone
+wait half a second for the time.
+
+**Shape:** position *p* starts at `p × STAGGER` and ramps to full over `FADE`. Starting
+points to tune by eye:
+
+```
+  STAGGER 70 ms, FADE 180 ms  ->  total 5x70 + 180 = 530 ms
+
+  pos 0  ####----
+  pos 1    ####----
+  pos 2      ####----
+  pos 3        ####----
+  pos 4          ####----
+  pos 5            ####----
+```
+
+Driven from `millis()` against a start stamp, so a slow loop pass skips levels rather than
+stretching the fade — the same discipline the breathing LED uses.
+
+**The step problem, stated plainly.** There are only N = 8 linear slice levels. Perceived
+brightness goes roughly as the 2.2nd root, so of the whole perceptual range the step from
+*off* to *one slice* is about 40% of it, and every step above that is 14% or less. A fade
+therefore always has one conspicuous jump: the moment the digit appears.
+
+Speed is what hides it. Eight levels over 180 ms is ~44 steps/second, and the eye resolves
+quantisation far worse in motion than in the slow, near-static breath that had to be fixed
+with 12-bit PWM and a gamma curve earlier in this firmware. Worth noting that the instinct
+carried over from that fix — *slow it down to smooth it* — is backwards here: a slower fade
+gives the eye longer on each level and makes the steps **more** visible, not less.
+
+**More slices is the wrong lever, and the numbers say so clearly.** Perceived lightness goes
+as luminance^(1/2.2), so halving a perceptual step costs 4.6x the slices. And because a slice
+is locked to one `~OE` period, the frame rate is `~OE_freq / N` — resolution is bought by
+spending refresh rate:
+
+| N | Buffer | Frame | 1st step | Every step after |
+|---|---|---|---|---|
+| 4 | 768 B | 1000 Hz | 53.3% | ≤19.7% |
+| **8** | **1536 B** | **500 Hz** | **38.9%** | **≤14.4%** |
+| 16 | 3072 B | 250 Hz | 28.4% | ≤10.5% |
+| 32 | 6144 B | 125 Hz — flickers | 20.7% | ≤7.7% |
+| 64 | 12288 B | 62 Hz — flickers | 15.1% | ≤5.6% |
+| 158 | 29.7 KB — exceeds RAM | 25 Hz — flickers | 10.0% | ≤3.7% |
+
+A 10% first step needs 158 slices: 30 KB of RAM the board does not have, at a 25 Hz frame
+rate. **N = 16 is the practical ceiling**, and it still leaves a 28% step. There is no
+feasible slice count that makes the appearance moment smooth.
+
+**And the appearance moment is the wrong target anyway.** Going from unlit to
+dimmest-visible is a change in *presence*, not brightness; even 4096 levels has a first
+perceptible level that arrives from nothing. What reads as "steppy" is the run of steps
+*after* a digit appears, and at N = 8 those are already ≤14.4%, near the threshold in motion.
+
+So the remedies, reordered by what they actually buy:
+
+1. **Ramp global `~OE` underneath the stagger.** 4096 steps, *zero* bytes, and it multiplies
+   with the slice count instead of competing with it. A digit appearing while global sits at
+   1/8 of configured is at 1/8 x 1/8 = 1/64 — a 15.1% step, identical to what N = 64 would
+   give for 12 KB. At 1/32 it is 8.0%, better than 158 slices.
+
+   The honest caveat: it helps the early digits most. Ramped across the whole 530 ms,
+   position 0 appears at 20.7% while position 5 appears near full at 38.9%. No setting
+   softens all six equally. It also means global brightness is transiently not the user's
+   setting, so landing back on it exactly has to be guaranteed.
+
+2. **N = 16** — 3072 B and a 250 Hz frame. Halves nothing; it takes the first step from 38.9%
+   to 28.4% and the rest from 14.4% to 10.5%. The last lever worth pulling, not the first.
+
+3. **Temporal dither** between adjacent slice counts across frames — more effective levels,
+   at the cost of a 250 Hz modulation at 1/8 amplitude, which is the sort of thing the
+   no-visible-flicker requirement exists to catch.
+
+None of these is built speculatively. The fade ships at N = 8 and gets looked at.
+
+**Interruption snaps to full, it does not reverse.** A button press, a re-entry to the menu,
+or an alarm firing abandons the fade and sets every position to full immediately. Anything
+else risks entering the menu with half-dim digits, which reads as a fault rather than a
+flourish.
+
+**Blank positions are not special-cased.** In 12-hour mode the leading position holds a
+space, so its slot in the sequence lights nothing. Keeping the slot means the rhythm is
+identical in 12- and 24-hour modes; skipping it would make the fade subtly different
+between them for no gain. Stated here because it looks like an oversight and is not.
+
+### Timer choice: TIM1, with TIM3 as the fallback
+
+TIM1 and TIM3 are both unused, and both can reach two DMA channels:
+
+| | Data channel | Clock channel |
+|---|---|---|
+| TIM1 | CH1 → DMA1 ch 2 | CH2 → DMA1 ch 3 |
+| TIM3 | CH3 → DMA1 ch 2 | CH4 → DMA1 ch 3 |
+
+TIM1 first: it is an advanced-control timer whose compare events are free here (we use no
+outputs, so `BDTR.MOE` never comes into it), and its APB2 clock needs no prescaler
+reasoning.
+
+**Verified rather than assumed** (task 1.1). Every reference to TIM1's base address in the
+current image sits in a generic core function that switches over all timers —
+`get_timer_index`, `enableTimerClock`, `getTimerUpIrq`, `getTimerCCIrq`, the `HardwareTimer`
+constructor, the `HAL_TIM_*_Start` advanced-timer special-casing, `pinMode` and
+`analogWrite`. Those are dispatch tables, not claims. TIM1 is never instantiated or started.
+
+The check turned up something that changes the fallback, though. This variant
+(`variant_generic.h` for `F103C8T_F103CB(T-U)`) does name timers:
+
+```
+  #define TIMER_TONE    TIM3
+  #define TIMER_SERVO   TIM4
+```
+
+TIM4 already carries the indicator LEDs, and TIM3 is the tone timer. Neither is claimed at
+runtime — `tone()` only instantiates its timer when first called, and nothing in this
+firmware calls `tone()` or uses `Servo` — but TIM3 is no longer the free drop-in the
+proposal took it for. **Using TIM3 forecloses `tone()`**, which for a clock with no buzzer is
+a price worth paying, but it is a price rather than nothing. TIM1 is claimed by neither, and
+is now the choice on evidence rather than on preference.
+
+### The bit-banged path stays compiled-in behind a flag
+
+DMA faults do not announce themselves. A misconfigured channel produces a blank display
+or garbage, with no stack trace and — because `U15`'s `QH'` goes nowhere — no electrical
+readback to interrogate. Keeping `shiftOutByte()` and its callers behind a build flag
+means a bad configuration is one rebuild from a working clock, and means the two can be
+run against the same content and compared by eye.
+
+It also costs almost nothing: the old path is a few hundred bytes of flash against the
+28 KB currently free.
+
+## Risks / Trade-offs
+
+**The display is confirmed only by eye** → No readback exists. Verification uses a pattern
+where corruption is unmistakable (`888888` with all decimal points, and a per-digit
+brightness ramp `1 2 3 4 5 6` where a wrong slice count is obvious), not the time, where a
+wrong segment can look like a plausible digit.
+
+**A buffer rewrite can tear a frame** → Updating 48 words while the DMA replays them can
+show old data in some slices and new data in others. That lasts one frame — 2 ms — and is
+invisible. Double-buffering would cost another 1536 B to fix something nobody can see;
+rejected deliberately rather than overlooked.
+
+**`clear()` changes meaning** → Today it pulses `~SRCLR` and latches, and the registers stay
+cleared until something writes them. With the engine running, the next frame overwrites the
+clear 2 ms later. `clear()` has to become "write spaces into the buffer", and any caller
+relying on the old semantics has to be found.
+
+**Someone re-tunes `PWM_FREQ_HZ` for the LEDs and silently breaks the slice lock** → The
+timer constants are derived from it rather than written down, and a static assertion fails
+the build if the division is not exact.
+
+**A precomputed word reaches PA0** → Every word is built by one helper from the four pin
+masks, and a static assertion rejects any word with bit 0 or bit 16 set. The failure this
+prevents is a display that goes dark for reasons invisible in the source.
+
+**This replaces a working driver with a peripheral configuration** → It is the largest
+single change contemplated for this firmware, and the reason the old path stays behind a
+flag. If per-digit brightness turns out not to be worth 1536 B and this complexity, the
+revert is a build flag rather than a git operation.
+
+**DMA steals bus cycles from the CPU** → 384k transfers/s against a 72 MHz AHB is on the
+order of 5% of bandwidth. The super-loop has no deadline tighter than a one-second RTC
+interrupt, so this is noted for completeness rather than as a concern.
+
+## Migration Plan
+
+1. Build the waveform and verify it with the engine stopped — shift one slice out by hand
+   through the existing path and confirm the display is identical. This separates "the
+   words are right" from "the peripherals are right", which is the hard part of debugging
+   DMA by eye.
+2. Start the engine with all digits at full brightness. The display should be
+   indistinguishable from today.
+3. Introduce per-digit levels and exercise them from a test pattern.
+
+Nothing in the clock's normal appearance changes at any step. Rollback is the build flag.
+
+## Open Questions
+
+- ~~**Does the Arduino core already claim TIM1?**~~ Answered in task 1.1: it does not. The
+  variant names TIM3 as `TIMER_TONE` and TIM4 as `TIMER_SERVO`, neither of which touches
+  TIM1. See the timer-choice decision above.
+- **Is 8 slices enough to dim a digit attractively?** A level that reads as "dimmer" and
+  not as "failing" may want the gamma floor the `~OE` levels use. Answerable only by eye,
+  after step 3.
+- **Should per-digit brightness persist?** The alarm and mode settings live in backup
+  registers. Whether a per-digit level is a user setting or a fixed property of a character
+  position is undecided, and deliberately left out of the specs until the feature exists to
+  judge.
+
+- **Do 8 levels make an attractive fade?** The fade is the answer to what consumes per-digit
+  brightness, but whether it looks like a flourish or like a stepped artefact is the one
+  thing that cannot be settled on paper. The remedies are ranked in the decision above;
+  which, if any, is needed is a question for the hardware.
+
+- **Should the fade also run at power-on?** It would suit a clock, and costs nothing beyond
+  one more trigger. Left out because it was not asked for, and because boot already has
+  enough going on that a flourish there could mask a fault.

@@ -10,6 +10,7 @@
 
 #include <Arduino.h>
 #include "./ShiftDisplay.h"
+#include "./ShiftDisplayEngine.h"
 
 /**
  * Inter-edge throttle for the shift clock.
@@ -212,6 +213,245 @@ void ShiftDisplay::update_display()
     }
 }
 
+/**
+ * Rebuild the refresh waveform.
+ *
+ * The bit order matches update_display() exactly, because it has to: bytes go
+ * out from _buffer[5] down to _buffer[0], so that _buffer[0] ends up in the last
+ * register of the chain and reads as the leftmost digit, and each byte goes out
+ * LSB first, with the decimal point in bit 0.
+ *
+ * A digit is lit in a slice when the slice index is below its level, so a level
+ * of k lights it in slices 0..k-1 -- k of SHIFT_ENGINE_SLICES, which is exactly
+ * k/N of the light. Which slices they are does not matter, only how many, because
+ * every slice spans one whole ~OE period and so carries the same on-time.
+ */
+void ShiftDisplay::build_waveform()
+{
+    // Resolve each character to its segments once rather than once per slice.
+    // Eight lookups per digit would all return the same byte, and this runs
+    // while the DMA is reading the buffer it rewrites -- the shorter that
+    // window, the less there is to tear.
+    uint8_t patterns[_char_buffer_size];
+
+    for (uint8_t d = 0; d < _char_buffer_size; d++)
+    {
+        patterns[d] = map_ascii(_buffer[d]);
+        if (GET_BIT(_dp_state, d))
+        {
+            SET_BIT(patterns[d], DP_BM);
+        }
+    }
+
+    for (uint8_t slice = 0; slice < SHIFT_ENGINE_SLICES; slice++)
+    {
+        uint32_t *words = &_wave[(uint32_t)slice * SHIFT_ENGINE_WORDS_PER_SLICE];
+        uint8_t w = 0;
+
+        for (int8_t d = _char_buffer_size - 1; d >= 0; d--)
+        {
+            // Lit in this slice, or dark: how many slices a digit appears in is
+            // its brightness.
+            uint8_t pattern = (slice < _digit_levels[d]) ? patterns[d] : 0;
+
+            for (uint8_t mask = 0x01; mask != 0; mask <<= 1, w++)
+            {
+                // Present the bit and hold the clock low. Only the driver's own
+                // pins are named, so ~OE is untouched whatever the word says.
+                words[w] = ((pattern & mask) ? _data_set : _data_clr) | _clk_clr;
+            }
+        }
+
+        // The latch pulse rides in the first two words. Placing it here rather
+        // than testing for it inside the loop saves two comparisons on each of
+        // the 384 words to position two bits.
+        words[0] |= _latch_set;
+        words[1] |= _latch_clr;
+    }
+}
+
+void ShiftDisplay::setDigitLevel(uint8_t index, uint8_t slices)
+{
+    if (index >= _char_buffer_size)
+    {
+        return;
+    }
+
+    _digit_levels[index] = (slices > SHIFT_ENGINE_SLICES) ? SHIFT_ENGINE_SLICES : slices;
+    build_waveform();
+}
+
+uint8_t ShiftDisplay::getDigitLevel(uint8_t index) const
+{
+    return (index < _char_buffer_size) ? _digit_levels[index] : 0;
+}
+
+void ShiftDisplay::setAllDigitLevels(uint8_t slices)
+{
+    uint8_t level = (slices > SHIFT_ENGINE_SLICES) ? SHIFT_ENGINE_SLICES : slices;
+
+    for (uint8_t i = 0; i < _char_buffer_size; i++)
+    {
+        _digit_levels[i] = level;
+    }
+
+    build_waveform();
+}
+
+/**
+ * Hand the display to TIM1 and two DMA channels.
+ *
+ * The trigger pairing differs from the one the design first named, and the
+ * reason is worth keeping. The design had CH1 present the data and CH2 raise the
+ * clock, which needs CCR1 = 0 -- a compare that coincides with the counter wrap,
+ * and an edge case not worth betting a hard-to-debug peripheral on. The update
+ * event *is* the wrap, unambiguously, so the data rides on update and only the
+ * clock needs a compare, at mid-period where nothing is ambiguous.
+ *
+ *   TIM1 update  -> DMA1 ch5 -> GPIOA->BSRR   48 words per slice, incrementing
+ *   TIM1 CC1     -> DMA1 ch2 -> GPIOA->BSRR   one constant word, no increment
+ *
+ * Both channels are otherwise free: ch5 also serves USART1_RX and TIM2_CH1, ch2
+ * serves USART3_TX, SPI1_RX and TIM2_UP, and none of those is in this build.
+ *
+ * No pin is handed to an alternate function. SER, SRCLK and RCLK stay plain GPIO
+ * outputs and the DMA writes BSRR, which is the whole reason this approach works
+ * on a board whose shift registers are not wired to SPI. CC1E stays clear so
+ * PA8, TIM1_CH1's pin, is never driven.
+ *
+ * One clock edge fires before the first data word, because CC1 at mid-period
+ * comes before the first wrap. It is harmless: the chain is exactly 48 bits, so
+ * a leading garbage bit is pushed out by the time the first latch happens.
+ */
+void ShiftDisplay::startEngine()
+{
+    if (!_initialized || !_engine_capable || _engine_running)
+    {
+        return;
+    }
+
+    // Every timing constant was derived from an assumed core clock. If the
+    // running system disagrees, the bit clock and the slice-to-~OE lock are both
+    // wrong, and a blank display is the honest outcome.
+    if (!shift_engine_clock_ok())
+    {
+        return;
+    }
+
+    build_waveform();
+
+    // Idle the clock and latch low before the engine takes over.
+    _data_port->BSRR = _clk_clr | _latch_clr;
+
+    __HAL_RCC_DMA1_CLK_ENABLE();
+    __HAL_RCC_TIM1_CLK_ENABLE();
+
+    // Data: one word per bit, walking the waveform, wrapping forever.
+    DMA1_Channel5->CCR = 0;
+    DMA1_Channel5->CPAR = (uint32_t)&_data_port->BSRR;
+    DMA1_Channel5->CMAR = (uint32_t)_wave;
+    DMA1_Channel5->CNDTR = SHIFT_ENGINE_WORDS_TOTAL;
+    DMA1_Channel5->CCR = DMA_CCR_DIR | DMA_CCR_CIRC | DMA_CCR_MINC |
+                         DMA_CCR_PSIZE_1 | DMA_CCR_MSIZE_1 | DMA_CCR_PL_1;
+
+    // Clock: the same word every time, so no memory increment and four bytes of
+    // source for any buffer length.
+    DMA1_Channel2->CCR = 0;
+    DMA1_Channel2->CPAR = (uint32_t)&_data_port->BSRR;
+    DMA1_Channel2->CMAR = (uint32_t)&_clk_high_word;
+    DMA1_Channel2->CNDTR = SHIFT_ENGINE_WORDS_TOTAL;
+    DMA1_Channel2->CCR = DMA_CCR_DIR | DMA_CCR_CIRC |
+                         DMA_CCR_PSIZE_1 | DMA_CCR_MSIZE_1 | DMA_CCR_PL_1;
+
+    DMA1_Channel5->CCR |= DMA_CCR_EN;
+    DMA1_Channel2->CCR |= DMA_CCR_EN;
+
+    TIM1->CR1 = 0;
+    TIM1->CR2 = 0; // CCDS clear: CC1 requests come from the CC event, not update
+    TIM1->PSC = 0;
+    TIM1->ARR = SHIFT_ENGINE_ARR;
+    TIM1->CCR1 = SHIFT_ENGINE_CCR_CLOCK;
+    TIM1->CCER = 0; // no output pin is driven
+
+    // Load PSC and ARR, then clear the flags that generated, before enabling the
+    // DMA requests -- otherwise this update event fires a transfer of its own.
+    TIM1->EGR = TIM_EGR_UG;
+    TIM1->SR = 0;
+
+    TIM1->DIER = TIM_DIER_UDE | TIM_DIER_CC1DE;
+    TIM1->CR1 = TIM_CR1_CEN;
+
+    _engine_running = true;
+}
+
+void ShiftDisplay::stopEngine()
+{
+    if (!_engine_running)
+    {
+        return;
+    }
+
+    TIM1->CR1 &= ~TIM_CR1_CEN;
+    TIM1->DIER = 0;
+    DMA1_Channel5->CCR &= ~DMA_CCR_EN;
+    DMA1_Channel2->CCR &= ~DMA_CCR_EN;
+
+    // Leave the pins where the bit-banged path expects to find them.
+    _data_port->BSRR = _clk_clr | _latch_clr;
+
+    _engine_running = false;
+}
+
+void ShiftDisplay::setDigitLevels(const uint8_t *slices)
+{
+    if (slices == nullptr)
+    {
+        return;
+    }
+
+    bool changed = false;
+
+    for (uint8_t i = 0; i < _char_buffer_size; i++)
+    {
+        uint8_t level = (slices[i] > SHIFT_ENGINE_SLICES) ? SHIFT_ENGINE_SLICES : slices[i];
+        if (_digit_levels[i] != level)
+        {
+            _digit_levels[i] = level;
+            changed = true;
+        }
+    }
+
+    // Rebuilding costs ~186 us and is the window during which the DMA reads a
+    // buffer being rewritten. Not doing it when nothing moved is free.
+    if (changed)
+    {
+        build_waveform();
+    }
+}
+
+void ShiftDisplay::shiftSliceByHand(uint8_t slice)
+{
+    if (!_initialized || !_engine_capable || slice >= SHIFT_ENGINE_SLICES)
+    {
+        return;
+    }
+
+    const uint32_t *words = &_wave[(uint32_t)slice * SHIFT_ENGINE_WORDS_PER_SLICE];
+
+    for (uint8_t w = 0; w < SHIFT_ENGINE_WORDS_PER_SLICE; w++)
+    {
+        // What the data channel writes on the CH1 compare.
+        _data_port->BSRR = words[w];
+        SHIFT_EDGE_DELAY();
+
+        // What the clock channel writes on the CH2 compare.
+        _data_port->BSRR = _clk_high_word;
+        SHIFT_EDGE_DELAY();
+    }
+
+    _data_port->BSRR = _clk_clr;
+}
+
 void ShiftDisplay::write_output_enable(uint16_t brightness)
 {
     if (brightness > _max_duty)
@@ -227,6 +467,41 @@ void ShiftDisplay::setBrightness(uint16_t duty)
 {
     _brightness = (duty > _max_duty) ? _max_duty : duty;
     write_output_enable(_brightness);
+}
+
+/**
+ * True if any pin this driver drives shares a port bit with ~OE.
+ *
+ * Every word the driver composes -- and every word the DMA engine will replay
+ * from a buffer -- is built from these four masks and nothing else, so if none
+ * of them touches the ~OE bit on the ~OE port, no word can. Checking the masks
+ * once is therefore equivalent to checking every word, and far cheaper.
+ *
+ * Both halves of BSRR are covered: the clear words are the set words shifted up
+ * 16, so a mask clear of the ~OE bit is clear in both halves by construction.
+ */
+bool ShiftDisplay::oe_collides() const
+{
+    struct
+    {
+        GPIO_TypeDef *port;
+        uint32_t mask;
+    } const pins[] = {
+        {_data_port, _data_set},
+        {_clk_port, _clk_set},
+        {_clr_port, _srclr_set},
+        {_latch_port, _latch_set},
+    };
+
+    for (auto const &p : pins)
+    {
+        if (p.port == _oe_port && (p.mask & _oe_mask) != 0U)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void ShiftDisplay::begin(uint32_t delay_us, uint16_t max_duty)
@@ -270,13 +545,45 @@ void ShiftDisplay::begin(uint32_t delay_us, uint16_t max_duty)
     _bit1_clklow = _data_set | _clk_clr;
     _bit0_clklow = _data_clr | _clk_clr;
 
+    // Resolve ~OE too -- not to write it, but to prove nothing else can.
+    PinName oe = digitalPinToPinName(_output_en_pin);
+    _oe_port = set_GPIO_Port_Clock(STM_PORT(oe));
+    _oe_mask = STM_GPIO_PIN(oe);
+    _pins_safe = !oe_collides();
+
+    // One DMA channel writes one port, and the waveform carries data, clock and
+    // latch bits together, so all three have to live on the same port. On this
+    // board they do -- PA3, PA4 and PA2 -- but the pin map is a variant's to
+    // change, so this is checked rather than assumed.
+    _engine_capable = (_data_port == _clk_port) && (_data_port == _latch_port);
+    _engine_running = false;
+
+    // The single word the clock channel replays for every rising edge.
+    _clk_high_word = _clk_set;
+
+    for (uint8_t i = 0; i < _char_buffer_size; i++)
+    {
+        _digit_levels[i] = SHIFT_ENGINE_SLICES;
+    }
+
+    build_waveform();
+
     _max_duty = max_duty;
     _brightness = 0;
     write_output_enable(0); // start blank, as the 10k pull-up already does
 
     _delay_us = delay_us;
 
-    _initialized = true;
+    // A driver that would write across ~OE does not come up. Blank is a state
+    // someone investigates; a display that dims unpredictably is one they live
+    // with and misdiagnose.
+    _initialized = _pins_safe;
+
+#if SHIFT_ENGINE_DMA
+    // Brightness is still zero here, so the first frame -- which latches whatever
+    // the registers powered up holding -- is never visible.
+    startEngine();
+#endif
 }
 
 void ShiftDisplay::update()
@@ -309,6 +616,12 @@ uint8_t ShiftDisplay::map_ascii(char ascii)
 
 void ShiftDisplay::shiftOutByte(uint8_t byte, bool dp)
 {
+    // The engine owns the pins while it runs; shifting here would fight it.
+    if (_engine_running)
+    {
+        return;
+    }
+
     if (dp)
     {
         SET_BIT(byte, DP_BM);
@@ -345,11 +658,24 @@ void ShiftDisplay::shiftOutAscii(char ascii, bool dp)
     shiftOutByte(map_ascii(ascii), dp);
 }
 
-void ShiftDisplay::writeDisplay(const char *buffer, uint8_t dp)
+void ShiftDisplay::setContent(const char *buffer, uint8_t dp)
 {
     update_buffer(buffer);
     _dp_state = dp;
-    update_display();
+    build_waveform();
+}
+
+void ShiftDisplay::writeDisplay(const char *buffer, uint8_t dp)
+{
+    setContent(buffer, dp);
+
+    // With the engine running the refresh picks the new words up on its next
+    // pass; walking the shift loop as well would spend 48 iterations reaching a
+    // guard that returns immediately.
+    if (!_engine_running)
+    {
+        update_display();
+    }
 }
 
 // enable() restores the configured brightness rather than going to full, so a
@@ -364,8 +690,35 @@ void ShiftDisplay::disable()
     write_output_enable(0);
 }
 
+/**
+ * Blank the display.
+ *
+ * This used to mean only "pulse ~SRCLR and latch", which left _buffer holding
+ * whatever it held: the registers were empty but the driver still believed it
+ * was showing something. Under the engine that meaning does not survive at all,
+ * because the next frame re-shifts the buffer over the cleared registers two
+ * milliseconds later.
+ *
+ * So clearing is now a change of content in both modes, and the ~SRCLR pulse is
+ * what the bit-banged path additionally does to make it immediate. Same meaning
+ * either way, which is the point -- a caller should not have to know which path
+ * is compiled in to know what clear() does.
+ */
 void ShiftDisplay::clear()
 {
+    for (uint8_t i = 0; i < _char_buffer_size; i++)
+    {
+        _buffer[i] = ' ';
+    }
+    _dp_state = 0;
+
+    build_waveform();
+
+    if (_engine_running)
+    {
+        return;
+    }
+
     // Clear the shift register (~SRCLR is active low)
     _clr_port->BSRR = _srclr_clr;
     SHIFT_EDGE_DELAY();
@@ -381,6 +734,12 @@ void ShiftDisplay::clear()
 
 void ShiftDisplay::latch()
 {
+    // The waveform latches every slice; a latch from here would land mid-stream.
+    if (_engine_running)
+    {
+        return;
+    }
+
     // Latch the shift register
     _latch_port->BSRR = _latch_clr;
     SHIFT_EDGE_DELAY();
@@ -388,11 +747,39 @@ void ShiftDisplay::latch()
     SHIFT_EDGE_DELAY();
 }
 
+/**
+ * Print one character.
+ *
+ * The bit-banged model is a stream: each character shifted goes into the first
+ * register and pushes everything already there one place along, so the newest
+ * character lands leftmost. Under the engine there is nothing to push -- the
+ * refresh replays a buffer -- so the same effect is produced by moving the
+ * buffer along instead. The decimal points travel with their characters.
+ *
+ * Without this the Print path would not fail, which is worse: it would return
+ * success and display nothing, because shiftOutByte() declines to fight the
+ * engine for the pins.
+ */
 inline size_t ShiftDisplay::write(uint8_t value)
 {
     if ((char)value == '\r' || (char)value == '\n')
     {
-        // clear();
+        return 1;
+    }
+
+    if (_engine_running)
+    {
+        for (uint8_t i = _char_buffer_size - 1; i > 0; i--)
+        {
+            _buffer[i] = _buffer[i - 1];
+        }
+        _buffer[0] = (char)value;
+
+        // Bit i is digit i's point, so moving every digit one place along is a
+        // single shift; the incoming character arrives without a point.
+        _dp_state = (uint8_t)((_dp_state << 1) & 0x3F);
+
+        build_waveform();
         return 1;
     }
 

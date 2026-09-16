@@ -47,8 +47,8 @@ several hundred MB, a few minutes. Later builds take about 25 seconds. A success
 build reports roughly:
 
 ```
-RAM:   [==        ]  24.7% (used 5052 bytes from 20480 bytes)
-Flash: [=======   ]  72.2% (used 47348 bytes from 65536 bytes)
+RAM:   [===       ]  31.6% (used 6476 bytes from 20480 bytes)
+Flash: [======    ]  58.5% (used 38360 bytes from 65536 bytes)
 ```
 
 Uploading needs the ST-Link on the SWD header. The board's default upload protocol
@@ -63,12 +63,64 @@ with `** Verified OK **` and `** Resetting Target **`.
 The driver writes the shift registers through `BSRR` rather than `digitalWrite`. `begin()`
 resolves each pin to its port and bit once and precomputes the `BSRR` words; the inner loop
 is then a select and two stores, about **9 instructions per bit** against roughly 117
-before. A full 48-bit refresh went from **~78 µs to ~6.7 µs**, a shift clock of roughly
-615 kHz to about **7 MHz**.
+before. A full 48-bit refresh went from **~117 µs to ~9 µs**, a shift clock of roughly
+410 kHz to about **5.3 MHz**.
+
+> These figures were first written as 78 µs → 6.7 µs and 615 kHz → 7 MHz. That was
+> arithmetic done at an assumed 72 MHz; **this board runs at 48 MHz** (`SystemCoreClock`
+> reports 48000000, and `WD` prints it). 117 instructions × 48 bits ÷ 72 MHz is 78 µs
+> exactly, which is how the original numbers arose. The conclusion is unchanged — no
+> failure was observed at the fastest rate the loop can produce — only the rate that
+> describes it.
 
 `~OE` shares GPIOA with the data, clock, latch and clear lines and belongs to the
 brightness timer, so **every write names the pins it owns**. A port-wide write
 (`GPIOA->ODR = …`) would reach across it however careful the intent.
+
+## The DMA display engine
+
+The display refreshes itself. TIM1 and two DMA1 channels replay a precomputed waveform
+into `GPIOA->BSRR`; the CPU writes content into a buffer and is otherwise uninvolved.
+
+```
+TIM1 update -> DMA1 ch5 -> GPIOA->BSRR   48 words per slice, incrementing
+TIM1 CC1    -> DMA1 ch2 -> GPIOA->BSRR   one constant word (SRCLK high), no increment
+```
+
+| | | |
+|---|---|---|
+| Core clock | **48 MHz** | not 72; `SystemCoreClock` says so |
+| Timer reload | ARR 249, CCR1 125 | derived, never written as literals |
+| Bit clock | 192 kHz | `PWM_FREQ_HZ x 48`; 28x margin |
+| Frame rate | 500 Hz | `PWM_FREQ_HZ / slices`; measured |
+| Slices | 8 | = per-digit brightness levels |
+| Buffer | 1536 bytes | `slices x 48 x 4` |
+| Rebuild cost | 186 µs | the tearing window |
+
+**Why a slice is exactly one `~OE` period.** Per-digit brightness (data path) and global
+brightness (`~OE` PWM) are two modulations that multiply. Unrelated periods beat — 4 kHz
+against a 1001 Hz frame is a visible 4 Hz flutter. Locked but with a slice shorter than an
+`~OE` period is worse: every digit's slices land at a fixed phase and take a systematically
+wrong share of the on-time, which never averages out and looks like a hardware fault. A slice
+holding a whole number of `~OE` periods removes the phase term entirely. With
+`PWM_FREQ_HZ` 4000 at 48 MHz it works out to exactly one: 12000 counts, 48 bits, 250 counts
+per bit. Verified on hardware — six digits at 4/8, 2/8 and 6/8 with none standing out.
+
+**The constants are derived, never written down.** `ShiftDisplayEngine.h` computes them from
+`PWM_FREQ_HZ` and `SHIFT_ENGINE_CORE_CLOCK_HZ`, with `static_assert`s that fail the build if
+a slice stops dividing into 48 whole bit periods, if the frame rate drops below 200 Hz, or if
+the bit clock exceeds 1 MHz. Retuning the LED PWM frequency therefore breaks the build rather
+than quietly skewing per-digit brightness. `F_CPU` cannot be used: on this core it expands to
+the runtime `SystemCoreClock`, so `shift_engine_clock_ok()` checks it at startup instead and
+the engine refuses to run — leaving the display blank — if the board disagrees.
+
+**Falling back.** `-D SHIFT_ENGINE_DMA=0` restores the bit-banged shift-out, which stays
+compiled in so a bad peripheral configuration is one rebuild from a working clock.
+
+**Menu-exit fade.** Leaving the menu brings the six digits in one at a time from the left:
+110 ms stagger, 260 ms ramp, 810 ms total, chosen by eye from five candidates. Driven from
+elapsed time, so a slow loop shortens it rather than stretching it. It changes brightness
+only — `render()` is untouched and the `time_dirty` path is as cheap as it ever was.
 
 **On the rate.** Six 74HC595s on 3.3 V: the family is characterised at 4.5 V, and for a
 chain this deep the limit is each stage's serial propagation delay plus the next stage's

@@ -18,6 +18,27 @@ using namespace ace_button;
 #define OEB PA0
 
 /**
+ * ~OE must not be one of the shift-register control pins, and none of them may
+ * alias another.
+ *
+ * ~OE shares GPIOA with all four, and the driver reaches its pins through BSRR
+ * words composed from their masks. If a pin define were ever edited to collide
+ * with OEB, those words would reach across the brightness timer's pin -- and
+ * once the display engine replays them from a DMA buffer there is nothing in
+ * the instruction stream to show it. The failure would look like a display that
+ * dims wrongly, not like a bug.
+ *
+ * This catches an alias at build time. ShiftDisplay::begin() catches the subtler
+ * case of two distinct pin numbers landing on the same port bit, which only the
+ * variant's pin map knows.
+ */
+static_assert(OEB != SER && OEB != SRCLK && OEB != SRCLRB && OEB != RCLK,
+              "The output-enable pin collides with a shift-register control pin");
+static_assert(SER != SRCLK && SER != SRCLRB && SER != RCLK &&
+                  SRCLK != SRCLRB && SRCLK != RCLK && SRCLRB != RCLK,
+              "Two shift-register control pins are assigned to the same pin");
+
+/**
  * User LEDs. The positional names below are how the LEDs sit on the board; note
  * that they run opposite to the schematic's D-numbering, which is a trap worth
  * keeping in mind when cross-referencing:
@@ -71,6 +92,17 @@ void cmd_get_backup(SerialCommands *sender);
 void cmd_set_nops(SerialCommands *sender);
 void cmd_set_pattern(SerialCommands *sender);
 #endif
+#ifdef SHIFT_ENGINE_VERIFY
+void cmd_wave_verify(SerialCommands *sender);
+void cmd_wave_level(SerialCommands *sender);
+void cmd_wave_dump(SerialCommands *sender);
+void cmd_wave_rate(SerialCommands *sender);
+void cmd_wave_engine(SerialCommands *sender);
+void cmd_wave_block(SerialCommands *sender);
+void cmd_wave_reset(SerialCommands *sender);
+void cmd_wave_tear(SerialCommands *sender);
+void cmd_wave_fade(SerialCommands *sender);
+#endif
 void cmd_set_disp(SerialCommands *sender);
 
 SerialCommand cmd_test_("TEST", cmd_test);
@@ -92,6 +124,22 @@ SerialCommand cmd_get_backup_("GB", cmd_get_backup);
 #ifdef SHIFT_SWEEP
 SerialCommand cmd_set_nops_("SN", cmd_set_nops);
 SerialCommand cmd_set_pattern_("TP", cmd_set_pattern);
+#endif
+#ifdef SHIFT_ENGINE_VERIFY
+/* Replays the waveform from the CPU, writing exactly the words and in exactly
+   the order the two DMA channels will. Establishes that the buffer is right
+   before any peripheral is configured -- debugging a DMA display by eye is hard
+   enough without also wondering whether what it replays was ever correct. */
+bool wave_verify = false;
+SerialCommand cmd_wave_verify_("WV", cmd_wave_verify);
+SerialCommand cmd_wave_level_("WL", cmd_wave_level);
+SerialCommand cmd_wave_dump_("WD", cmd_wave_dump);
+SerialCommand cmd_wave_rate_("WR", cmd_wave_rate);
+SerialCommand cmd_wave_engine_("WE", cmd_wave_engine);
+SerialCommand cmd_wave_block_("WB", cmd_wave_block);
+SerialCommand cmd_wave_reset_("WX", cmd_wave_reset);
+SerialCommand cmd_wave_tear_("WT", cmd_wave_tear);
+SerialCommand cmd_wave_fade_("WF", cmd_wave_fade);
 #endif
 
 STM32RTC &rtc = STM32RTC::getInstance();
@@ -194,23 +242,9 @@ uint8_t last_rendered_dp = 0xFF;
 #define BLINK_PERIOD_MS 300
 #define BREATH_PERIOD_MS 2500
 
-/**
- * Indicators run at 12-bit PWM, not the core's 8-bit default. Eight bits is
- * plenty for steady indicators but not for fading between them: at the dim end
- * a single duty step is a large fraction of the light output -- duty 4 to 5 is a
- * 25% jump -- so a breath built on 256 steps visibly staircases however fast it
- * is updated. 4096 steps put those jumps below the threshold where the eye
- * separates them. MAX_PWM_RESOLUTION is 16, so this is well inside what the
- * core supports.
- */
-#define PWM_BITS 12
-#define PWM_MAX_DUTY 4095
-/* 1 kHz would probably do, but a bright high-contrast source at low duty seen at
-   the edge of vision is where PWM flicker gets noticed, and a clock is looked at
-   sideways constantly. 4 kHz costs nothing: the timer reload is still about
-   18000 counts, far more than the 4096 duty steps, so resolution is untouched.
-   Resolution would only start to suffer above roughly 17 kHz. */
-#define PWM_FREQ_HZ 4000
+/* PWM_BITS, PWM_MAX_DUTY and PWM_FREQ_HZ moved to header.h: the display engine's
+   timer constants are derived from PWM_FREQ_HZ, so it has to be visible to the
+   ShiftDisplay library as well as to this file. */
 
 /**
  * Indicator brightness levels, mapped to duty on a gamma curve. Luminous output
@@ -248,6 +282,159 @@ void commit_edit();
 void handleEvent(AceButton *, uint8_t, uint8_t);
 void irq_rtc_seconds(void *data);
 void irq_timer_led();
+
+/**
+ * Write content to the display.
+ *
+ * With the waveform replay running, content goes into the buffer and the refresh
+ * picks it up; shifting and latching here as well would fight the replay and show
+ * as a flick once a second. Without it, this is the shipping path unchanged.
+ */
+static inline void display_write(const char *buf, uint8_t dp)
+{
+  // With the engine running -- or the CPU replay standing in for it -- content
+  // goes into the waveform and the refresh picks it up. Shifting and latching
+  // here as well would fight it. Without either, this is the shipping path.
+  if (display.engineRunning())
+  {
+    display.setContent(buf, dp);
+    return;
+  }
+
+#ifdef SHIFT_ENGINE_VERIFY
+  if (wave_verify)
+  {
+    display.setContent(buf, dp);
+    return;
+  }
+#endif
+
+  display.writeDisplay(buf, dp);
+  display.latch();
+}
+
+/**
+ * The menu-exit fade.
+ *
+ * Leaving the menu, the six positions come up one at a time from the left
+ * rather than the time snapping back all at once. Position p starts at
+ * p x FADE_STAGGER_MS and ramps to full over FADE_RAMP_MS.
+ *
+ *   pos 0  ####----
+ *   pos 1    ####----
+ *   pos 2      ####----      STAGGER 110 ms, RAMP 260 ms, total 810 ms
+ *   pos 3        ####----
+ *   pos 4          ####----
+ *   pos 5            ####----
+ *
+ * Those timings were chosen by eye from five candidates spanning 320 to 810 ms,
+ * and the choice says something about the quantisation worry. The design expected
+ * eight linear levels to be coarse -- the step from unlit to one slice is about
+ * 39% of the perceptual range -- and expected speed to be what hid it, making a
+ * slower fade the riskier one. The slowest candidate was preferred. So the
+ * stepping is not the binding constraint at this size and brightness, and none of
+ * the ranked remedies (ramping global ~OE underneath, then N = 16, then temporal
+ * dither) has turned out to be needed.
+ *
+ * Driven from elapsed time rather than by counting steps, so a slow pass through
+ * the loop skips levels and still finishes on schedule instead of stretching.
+ *
+ * It changes brightness only. Content is never recomputed or re-shifted for it:
+ * per-digit levels are independent of the character buffer, which is what lets
+ * this sit beside update_leds() rather than inside render(), leaving the
+ * time_dirty path exactly as cheap as it was.
+ */
+#define FADE_STAGGER_MS 110UL
+#define FADE_RAMP_MS 260UL
+
+#ifdef SHIFT_ENGINE_VERIFY
+/* Tunable at runtime while the timings are being chosen by eye. Reflashing per
+   combination makes comparing two of them useless: by the time the second is
+   running, the first is a memory. Production uses the constants. */
+static uint32_t fade_stagger_ms = FADE_STAGGER_MS;
+static uint32_t fade_ramp_ms = FADE_RAMP_MS;
+#define FADE_STAGGER fade_stagger_ms
+#define FADE_RAMP fade_ramp_ms
+#else
+#define FADE_STAGGER FADE_STAGGER_MS
+#define FADE_RAMP FADE_RAMP_MS
+#endif
+
+#define FADE_TOTAL_MS (5UL * FADE_STAGGER + FADE_RAMP)
+
+static uint32_t fade_start_ms = 0;
+static bool fade_active = false;
+
+static void fade_begin()
+{
+  // Per-digit brightness only exists while the engine refreshes. Without it the
+  // levels are inert, so there is nothing to fade.
+  if (!display.engineRunning())
+  {
+    return;
+  }
+
+  fade_start_ms = millis();
+  fade_active = true;
+}
+
+/**
+ * Abandon the fade and put every position back to full.
+ *
+ * Never reverses or pauses: anything interrupting the fade wants the display
+ * readable now. Leaving a digit part-way would show as a fault rather than a
+ * flourish, and entering the menu with half-dim digits is the specific outcome
+ * this prevents.
+ */
+static void fade_abort()
+{
+  if (!fade_active)
+  {
+    return;
+  }
+
+  fade_active = false;
+  display.setAllDigitLevels(ShiftDisplay::maxDigitLevel());
+}
+
+static void update_display_fade()
+{
+  if (!fade_active)
+  {
+    return;
+  }
+
+  const uint8_t full = ShiftDisplay::maxDigitLevel();
+  uint32_t elapsed = millis() - fade_start_ms;
+
+  if (elapsed >= FADE_TOTAL_MS)
+  {
+    fade_active = false;
+    display.setAllDigitLevels(full);
+    return;
+  }
+
+  uint8_t levels[6];
+
+  for (uint8_t p = 0; p < 6; p++)
+  {
+    uint32_t begins = (uint32_t)p * FADE_STAGGER;
+
+    if (elapsed <= begins)
+    {
+      levels[p] = 0;
+    }
+    else
+    {
+      uint32_t into = elapsed - begins;
+      levels[p] = (into >= FADE_RAMP)
+                      ? full
+                      : (uint8_t)((into * full) / FADE_RAMP_MS);
+    }
+  }
+
+  display.setDigitLevels(levels);
+}
 
 static inline bool blink_on()
 {
@@ -295,6 +482,17 @@ void setup()
   serial_commands_.AddCommand(&cmd_set_nops_);
   serial_commands_.AddCommand(&cmd_set_pattern_);
 #endif
+#ifdef SHIFT_ENGINE_VERIFY
+  serial_commands_.AddCommand(&cmd_wave_verify_);
+  serial_commands_.AddCommand(&cmd_wave_level_);
+  serial_commands_.AddCommand(&cmd_wave_dump_);
+  serial_commands_.AddCommand(&cmd_wave_rate_);
+  serial_commands_.AddCommand(&cmd_wave_engine_);
+  serial_commands_.AddCommand(&cmd_wave_block_);
+  serial_commands_.AddCommand(&cmd_wave_reset_);
+  serial_commands_.AddCommand(&cmd_wave_tear_);
+  serial_commands_.AddCommand(&cmd_wave_fade_);
+#endif
 
   last_activity_ms = millis();
 
@@ -328,7 +526,24 @@ void loop()
     stateMachine.execute(Action::MENU_TIMEOUT);
   }
 
+  /* The fade triggers on a transition, not a state. Backing out, committing an
+     editor and timing out all arrive at IDLE through this one update(), so all
+     three fade with no special-casing. FIRING -> IDLE deliberately does not:
+     dismissing an alarm is not a moment to wait half a second for the time. */
+  State state_before = stateMachine.getState();
+
   stateMachine.update();
+
+  State state_after = stateMachine.getState();
+
+  bool fade_just_began = false;
+
+  if (state_after == State::IDLE &&
+      (state_before == State::MENU || state_before == State::EDIT))
+  {
+    fade_begin();
+    fade_just_began = fade_active;
+  }
 
   if (stateMachine.takeCommit())
   {
@@ -338,6 +553,40 @@ void loop()
   render();
   update_leds();
   update_display_brightness();
+
+  /* Anything that wants the display readable now ends the fade: a button, a
+     return to the menu, an alarm firing.
+     
+     Not on the pass that started it, though. Leaving the menu is *caused* by a
+     button, and the button states are not cleared until the end of the loop, so
+     the press that triggered the fade is still latched here and would abort it
+     immediately -- every time, for every route out of the menu. That is why this
+     worked when driven from the serial command and never once from the buttons. */
+  if (fade_active && !fade_just_began &&
+      (stateMachine.getState() != State::IDLE ||
+       btnSetState != ButtonState::UNCHANGED ||
+       btnPlusState != ButtonState::UNCHANGED ||
+       btnMinusState != ButtonState::UNCHANGED))
+  {
+    fade_abort();
+  }
+
+  update_display_fade();
+
+#ifdef SHIFT_ENGINE_VERIFY
+  /* Replay every slice back to back, continuously, exactly as the DMA engine
+     will. Running it here rather than inside render() matters: the engine
+     refreshes whether or not the time changed, and the latch-the-previous-slice
+     arrangement only reads correctly when slices follow each other without a
+     gap. */
+  if (wave_verify)
+  {
+    for (uint8_t s = 0; s < ShiftDisplay::maxDigitLevel(); s++)
+    {
+      display.shiftSliceByHand(s);
+    }
+  }
+#endif
 
   // reset the button states
   btnSetState = ButtonState::UNCHANGED;
@@ -767,8 +1016,7 @@ void render()
     memcpy(buf, (test_pattern == 1) ? "888888" : "012345", 6);
     if (dp != last_rendered_dp || memcmp(buf, last_rendered, 6) != 0)
     {
-      display.writeDisplay(buf, dp);
-      display.latch();
+      display_write(buf, dp);
       memcpy(last_rendered, buf, 6);
       last_rendered[6] = '\0';
       last_rendered_dp = dp;
@@ -777,8 +1025,7 @@ void render()
     {
       // Keep re-shifting so a marginal rate has chances to fail, rather than
       // latching once and sitting on a result that happened to be correct.
-      display.writeDisplay(buf, dp);
-      display.latch();
+      display_write(buf, dp);
     }
     return;
   }
@@ -823,8 +1070,7 @@ void render()
   // would otherwise re-shift six characters every pass of the loop.
   if (dp != last_rendered_dp || memcmp(buf, last_rendered, 6) != 0)
   {
-    display.writeDisplay(buf, dp);
-    display.latch();
+    display_write(buf, dp);
     memcpy(last_rendered, buf, 6);
     last_rendered[6] = '\0';
     last_rendered_dp = dp;
@@ -1591,6 +1837,364 @@ void cmd_get_backup(SerialCommands *sender)
   print4hex(out, BKP_MAGIC_VALUE);
   out->println();
 }
+
+#ifdef SHIFT_ENGINE_VERIFY
+void cmd_wave_verify(SerialCommands *sender)
+{
+  char *arg = sender->Next();
+  Stream *out = sender->GetSerial();
+
+  if (arg == NULL)
+  {
+    out->print("wave=");
+    out->println(wave_verify ? 1 : 0);
+    return;
+  }
+
+  wave_verify = (atoi(arg) != 0);
+
+  if (wave_verify && display.engineRunning())
+  {
+    // Both drive the same pins. The engine wins unless it is told to stand down.
+    display.stopEngine();
+    out->println("engine stopped");
+  }
+
+  if (!wave_verify)
+  {
+    // Leaving replay: put the shipping path back in charge of what is latched.
+    time_dirty = true;
+  }
+
+  out->print("wave=");
+  out->println(wave_verify ? 1 : 0);
+}
+
+void cmd_wave_level(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+  char *pos_arg = sender->Next();
+
+  if (pos_arg == NULL)
+  {
+    for (uint8_t i = 0; i < 6; i++)
+    {
+      out->print(display.getDigitLevel(i));
+      out->print(i == 5 ? '\n' : ' ');
+    }
+    return;
+  }
+
+  char *lvl_arg = sender->Next();
+  if (lvl_arg == NULL)
+  {
+    out->println("ERROR NO_LEVEL");
+    return;
+  }
+
+  int pos = atoi(pos_arg);
+  int lvl = atoi(lvl_arg);
+
+  if (pos < 0 || pos > 5)
+  {
+    out->print("ERROR POS OUT OF RANGE: ");
+    out->println(pos_arg);
+    return;
+  }
+
+  if (lvl < 0 || lvl > (int)ShiftDisplay::maxDigitLevel())
+  {
+    out->print("ERROR LEVEL OUT OF RANGE: ");
+    out->println(lvl_arg);
+    return;
+  }
+
+  display.setDigitLevel((uint8_t)pos, (uint8_t)lvl);
+  out->println("OK");
+}
+
+/**
+ * Measure what the CPU replay actually achieves, flat out.
+ *
+ * The replay turned out not to flicker, which the proposal did not expect, so
+ * the rate it reaches is worth a number rather than an inference. It also sets
+ * the honest terms for what DMA buys: not "the CPU cannot do this" but "the CPU
+ * need not spend itself doing it".
+ *
+ * Blocks the loop for the duration. It is a measurement in a test build.
+ */
+/**
+ * Hold the main loop for a while, on purpose.
+ *
+ * The claim the engine makes is that the display refreshes whether or not the
+ * CPU is paying attention. A loop that cannot run for two seconds is the
+ * bluntest possible test of it, and the one worth doing: if the refresh is
+ * secretly leaning on the loop, this is where it shows.
+ */
+/* Reset on demand, so "what does the display do coming up" is a repeatable
+   observation rather than something glimpsed during a reflash. */
+/**
+ * Rebuild the waveform as fast as possible, repeatedly, and time it.
+ *
+ * Two things at once. The number says how long the DMA spends reading a buffer
+ * that is being rewritten underneath it -- the tearing window. The burst is the
+ * test: rebuilding thousands of times a second is far past anything the clock
+ * will ever do, so if a mid-frame rewrite can produce something worse than a
+ * momentary tear, this is where it appears.
+ *
+ * Each word is a single aligned 32-bit store, so no half-written word can ever
+ * be read. The worst available outcome is some digits from the old content and
+ * some from the new, for one frame.
+ */
+/* Run the fade without walking the menu, so it can be watched repeatedly while
+   the timings are tuned by eye. Production carries neither this nor the flag. */
+void cmd_wave_fade(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+
+  if (!display.engineRunning())
+  {
+    out->println("ERROR ENGINE_STOPPED");
+    return;
+  }
+
+  char *a = sender->Next();
+  if (a != NULL)
+  {
+    fade_stagger_ms = (uint32_t)atol(a);
+    char *b = sender->Next();
+    if (b != NULL)
+    {
+      fade_ramp_ms = (uint32_t)atol(b);
+    }
+  }
+
+  fade_begin();
+
+  out->print("fade stagger=");
+  out->print(FADE_STAGGER);
+  out->print(" ramp=");
+  out->print(FADE_RAMP);
+  out->print(" total=");
+  out->println(FADE_TOTAL_MS);
+}
+
+void cmd_wave_tear(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+  char *arg = sender->Next();
+  uint32_t n = (arg == NULL) ? 2000UL : (uint32_t)atol(arg);
+
+  if (n > 20000UL)
+  {
+    n = 20000UL;
+  }
+
+  uint8_t keep[6];
+  for (uint8_t i = 0; i < 6; i++)
+  {
+    keep[i] = display.getDigitLevel(i);
+  }
+
+  uint32_t t0 = micros();
+  for (uint32_t i = 0; i < n; i++)
+  {
+    // Alternate the levels so the content genuinely changes every rebuild.
+    display.setDigitLevel(0, (i & 1) ? keep[0] : (uint8_t)(keep[0] / 2 + 1));
+  }
+  uint32_t dt = micros() - t0;
+
+  for (uint8_t i = 0; i < 6; i++)
+  {
+    display.setDigitLevel(i, keep[i]);
+  }
+
+  out->print("rebuilds=");
+  out->print(n);
+  out->print(" us_total=");
+  out->print(dt);
+  out->print(" ns_each=");
+  out->print((uint32_t)((uint64_t)dt * 1000ULL / n));
+  out->print(" frame_us=");
+  out->println(1000000UL / SHIFT_ENGINE_FRAME_HZ);
+}
+
+void cmd_wave_reset(SerialCommands *sender)
+{
+  sender->GetSerial()->println("resetting");
+  sender->GetSerial()->flush();
+  delay(50);
+  NVIC_SystemReset();
+}
+
+void cmd_wave_block(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+  char *arg = sender->Next();
+  uint32_t ms = (arg == NULL) ? 2000UL : (uint32_t)atol(arg);
+
+  if (ms > 10000UL)
+  {
+    ms = 10000UL;
+  }
+
+  out->print("blocking ");
+  out->print(ms);
+  out->println(" ms");
+  out->flush();
+
+  uint32_t t0 = millis();
+  while ((millis() - t0) < ms)
+  {
+    __asm__ volatile("nop");
+  }
+
+  out->println("unblocked");
+}
+
+void cmd_wave_engine(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+  char *arg = sender->Next();
+
+  if (arg == NULL)
+  {
+    out->print("engine=");
+    out->println(display.engineRunning() ? 1 : 0);
+    return;
+  }
+
+  if (atoi(arg) != 0)
+  {
+    wave_verify = false;
+    display.startEngine();
+  }
+  else
+  {
+    display.stopEngine();
+    time_dirty = true; // let the bit-banged path repaint
+  }
+
+  out->print("engine=");
+  out->println(display.engineRunning() ? 1 : 0);
+}
+
+void cmd_wave_rate(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+
+  if (display.engineRunning())
+  {
+    /* Count CNDTR reloads over a fixed window. The counter walks 384 words down
+       to 1 and reloads, once per frame, so a reload seen is a frame completed --
+       measured from the hardware rather than inferred from the constants. */
+    const uint32_t WINDOW_MS = 400;
+    uint32_t t0 = millis();
+    uint16_t last = (uint16_t)DMA1_Channel5->CNDTR;
+    uint32_t wraps = 0;
+
+    while ((millis() - t0) < WINDOW_MS)
+    {
+      uint16_t now = (uint16_t)DMA1_Channel5->CNDTR;
+      if (now > last)
+      {
+        wraps++;
+      }
+      last = now;
+    }
+
+    out->print("dma frames=");
+    out->print(wraps);
+    out->print(" in_ms=");
+    out->print(WINDOW_MS);
+    out->print(" frame_hz=");
+    out->print(wraps * 1000UL / WINDOW_MS);
+    out->print(" target_frame_hz=");
+    out->println(SHIFT_ENGINE_FRAME_HZ);
+    return;
+  }
+
+  const uint16_t FRAMES = 200;
+
+  uint32_t t0 = micros();
+  for (uint16_t f = 0; f < FRAMES; f++)
+  {
+    for (uint8_t s = 0; s < ShiftDisplay::maxDigitLevel(); s++)
+    {
+      display.shiftSliceByHand(s);
+    }
+  }
+  uint32_t dt = micros() - t0;
+
+  if (dt == 0)
+  {
+    out->println("ERROR NO_ELAPSED");
+    return;
+  }
+
+  uint32_t frame_hz = (uint32_t)((uint64_t)FRAMES * 1000000ULL / dt);
+  uint32_t bits = (uint32_t)FRAMES * ShiftDisplay::maxDigitLevel() * SHIFT_ENGINE_BITS_PER_SLICE;
+  uint32_t bit_hz = (uint32_t)((uint64_t)bits * 1000000ULL / dt);
+
+  out->print("frames=");
+  out->print(FRAMES);
+  out->print(" us=");
+  out->print(dt);
+  out->print(" frame_hz=");
+  out->print(frame_hz);
+  out->print(" bit_hz=");
+  out->print(bit_hz);
+  out->print(" target_frame_hz=");
+  out->print(SHIFT_ENGINE_FRAME_HZ);
+  out->print(" target_bit_hz=");
+  out->println(SHIFT_ENGINE_BIT_CLOCK_HZ);
+}
+
+void cmd_wave_dump(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+
+  out->print("slices=");
+  out->print(SHIFT_ENGINE_SLICES);
+  out->print(" words/slice=");
+  out->print(SHIFT_ENGINE_WORDS_PER_SLICE);
+  out->print(" bytes=");
+  out->print(SHIFT_ENGINE_BUFFER_BYTES);
+  out->print(" arr=");
+  out->print(SHIFT_ENGINE_ARR);
+  out->print(" ccr=");
+  out->print(SHIFT_ENGINE_CCR_CLOCK);
+  out->print(" bitclk=");
+  out->print(SHIFT_ENGINE_BIT_CLOCK_HZ);
+  out->print(" frame=");
+  out->print(SHIFT_ENGINE_FRAME_HZ);
+  out->print(" capable=");
+  out->print(display.engineCapable() ? 1 : 0);
+  out->print(" running=");
+  out->print(display.engineRunning() ? 1 : 0);
+  out->print(" cndtr=");
+  out->print(DMA1_Channel5->CNDTR);
+  out->print(" clkok=");
+  out->print(shift_engine_clock_ok() ? 1 : 0);
+  out->print(" coreclk=");
+  out->print(SystemCoreClock);
+  out->print(" assumed=");
+  out->println((uint32_t)SHIFT_ENGINE_CORE_CLOCK_HZ);
+
+  // The first four words of slice 0: enough to see the latch pulse riding in
+  // words 0 and 1, and that no word touches the ~OE bit.
+  const uint32_t *w = display.waveform();
+  for (uint8_t i = 0; i < 4; i++)
+  {
+    out->print("w");
+    out->print(i);
+    out->print("=");
+    print4hex(out, (uint16_t)(w[i] >> 16));
+    print4hex(out, (uint16_t)(w[i] & 0xFFFF));
+    out->print(i == 3 ? '\n' : ' ');
+  }
+}
+#endif
 
 #ifdef SHIFT_SWEEP
 void cmd_set_nops(SerialCommands *sender)
