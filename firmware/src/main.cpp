@@ -649,6 +649,25 @@ static void put2(char *buf, uint8_t pos, uint8_t value, bool visible)
   }
 }
 
+/**
+ * Writes the hour, converted for the display mode, with the leading zero
+ * suppressed in 12-hour mode -- ` 9 30 00` rather than `09 30 00`. 24-hour mode
+ * keeps its leading zero, where it is correct.
+ *
+ * Both places that render the time go through this. Inlining the conditional
+ * twice invites the alarm flash drifting out of step with the clock it flashes.
+ */
+static void put_hours(char *buf, uint8_t hours24, bool visible)
+{
+  uint8_t shown = display_hours(hours24);
+  put2(buf, 0, shown, visible);
+
+  if (visible && settings.mode12 && shown < 10)
+  {
+    buf[0] = ' ';
+  }
+}
+
 static void render_menu(char *buf)
 {
   const char *label;
@@ -779,7 +798,7 @@ void render()
     // Flash the whole display so a firing alarm cannot be mistaken for the clock.
     if (blink_on())
     {
-      put2(buf, 0, display_hours(date_time_buf.hours), true);
+      put_hours(buf, date_time_buf.hours, true);
       put2(buf, 2, date_time_buf.minutes, true);
       put2(buf, 4, date_time_buf.seconds, true);
       dp = 0b00001000;
@@ -792,7 +811,7 @@ void render()
 
   case State::IDLE:
   default:
-    put2(buf, 0, display_hours(date_time_buf.hours), true);
+    put_hours(buf, date_time_buf.hours, true);
     put2(buf, 2, date_time_buf.minutes, true);
     put2(buf, 4, date_time_buf.seconds, true);
     dp = 0b00001000;
