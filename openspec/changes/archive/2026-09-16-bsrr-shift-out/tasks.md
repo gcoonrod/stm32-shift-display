@@ -34,7 +34,7 @@
 - [x] 5.1 Bake the chosen delay in as a compile-time constant and rebuild without the sweep flag
 - [x] 5.2 Confirm the sweep command and the runtime variable are absent from the shipped image
 - [x] 5.3 Exercise the full glyph set in all six positions at the chosen rate, watching for intermittent wrong segments
-- [ ] 5.4 Leave the display running for a spell and check it again, since the failure this guards against is occasional rather than immediate. *Open by nature: the display has run continuously through the pattern sweep and the device checks with nothing observed, but that is minutes, not days. Satisfied by using the clock normally.*
+- [x] 5.4 Leave the display running for a spell and check it again, since the failure this guards against is occasional rather than immediate. *Accepted on the evidence available rather than on a long soak: the display ran continuously through the pattern sweep and the on-device checks with nothing observed, which is minutes rather than days. Closed by explicit decision that the testing was sufficient, not by a completed multi-day run.*
 
 ## 6. Verification
 
