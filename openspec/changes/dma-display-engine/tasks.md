@@ -55,7 +55,7 @@
 - [ ] 7.5 Wire the per-position ramp: position *p* starts at `p × STAGGER` and reaches full over `FADE`
 - [ ] 7.6 Add the abort: any button press, menu re-entry or alarm fire snaps every position to full immediately
 - [ ] 7.7 Add a build-flagged serial command to trigger the fade without walking the menu, so it can be watched repeatedly; confirm it is absent from the production image
-- [ ] 7.8 Watch the fade and judge whether 8 levels reads as a flourish or as steps. If it steps, work the remedies in the design's order — N = 16 first — and record which was needed and why
+- [ ] 7.8 Watch the fade and judge whether 8 levels reads as a flourish or as steps. If it steps, work the remedies in the design's order — the global `~OE` ramp first, since it costs no RAM and buys more than more slices do — and record which was needed and why
 - [ ] 7.9 Confirm the fade ends at the configured brightness at every level including the minimum, and that a digit is never left dim by any exit path
 - [ ] 7.10 Confirm the blanked leading position stays blank throughout in 12-hour mode, and that the remaining digits keep their timing
 - [ ] 7.11 Hold the loop busy mid-fade and confirm the fade shortens rather than stretching

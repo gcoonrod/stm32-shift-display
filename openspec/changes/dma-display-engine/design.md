@@ -208,13 +208,44 @@ with 12-bit PWM and a gamma curve earlier in this firmware. Worth noting that th
 carried over from that fix — *slow it down to smooth it* — is backwards here: a slower fade
 gives the eye longer on each level and makes the steps **more** visible, not less.
 
-If it still reads badly, the remedies in order of cost:
+**More slices is the wrong lever, and the numbers say so clearly.** Perceived lightness goes
+as luminance^(1/2.2), so halving a perceptual step costs 4.6x the slices. And because a slice
+is locked to one `~OE` period, the frame rate is `~OE_freq / N` — resolution is bought by
+spending refresh rate:
 
-1. **N = 16** — 3072 B and a 250 Hz frame, for 16 levels. Halves every step.
-2. **Ramp global `~OE` alongside the stagger** — 4096 fine steps multiplying the coarse
-   per-digit ones, which would smooth the appearance moment specifically. Costs the
-   complication that global brightness is transiently not the user's setting, and must be
-   guaranteed to land back on it.
+| N | Buffer | Frame | 1st step | Every step after |
+|---|---|---|---|---|
+| 4 | 768 B | 1000 Hz | 53.3% | ≤19.7% |
+| **8** | **1536 B** | **500 Hz** | **38.9%** | **≤14.4%** |
+| 16 | 3072 B | 250 Hz | 28.4% | ≤10.5% |
+| 32 | 6144 B | 125 Hz — flickers | 20.7% | ≤7.7% |
+| 64 | 12288 B | 62 Hz — flickers | 15.1% | ≤5.6% |
+| 158 | 29.7 KB — exceeds RAM | 25 Hz — flickers | 10.0% | ≤3.7% |
+
+A 10% first step needs 158 slices: 30 KB of RAM the board does not have, at a 25 Hz frame
+rate. **N = 16 is the practical ceiling**, and it still leaves a 28% step. There is no
+feasible slice count that makes the appearance moment smooth.
+
+**And the appearance moment is the wrong target anyway.** Going from unlit to
+dimmest-visible is a change in *presence*, not brightness; even 4096 levels has a first
+perceptible level that arrives from nothing. What reads as "steppy" is the run of steps
+*after* a digit appears, and at N = 8 those are already ≤14.4%, near the threshold in motion.
+
+So the remedies, reordered by what they actually buy:
+
+1. **Ramp global `~OE` underneath the stagger.** 4096 steps, *zero* bytes, and it multiplies
+   with the slice count instead of competing with it. A digit appearing while global sits at
+   1/8 of configured is at 1/8 x 1/8 = 1/64 — a 15.1% step, identical to what N = 64 would
+   give for 12 KB. At 1/32 it is 8.0%, better than 158 slices.
+
+   The honest caveat: it helps the early digits most. Ramped across the whole 530 ms,
+   position 0 appears at 20.7% while position 5 appears near full at 38.9%. No setting
+   softens all six equally. It also means global brightness is transiently not the user's
+   setting, so landing back on it exactly has to be guaranteed.
+
+2. **N = 16** — 3072 B and a 250 Hz frame. Halves nothing; it takes the first step from 38.9%
+   to 28.4% and the rest from 14.4% to 10.5%. The last lever worth pulling, not the first.
+
 3. **Temporal dither** between adjacent slice counts across frames — more effective levels,
    at the cost of a 250 Hz modulation at 1/8 amplitude, which is the sort of thing the
    no-visible-flicker requirement exists to catch.
