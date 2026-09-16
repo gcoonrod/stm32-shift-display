@@ -83,7 +83,10 @@ gamma-mapped brightness level. All three are written through one path; a stray
 `digitalWrite` reconfigures the pin away from its timer and stops it. `digitalRead` on them
 is meaningless, so `GL` reports cached duty instead.
 
-**Settings** persist in backup registers DR2/DR3/DR5/DR8. DR1, DR4 and DR10 belong to the
+**Settings** persist in backup registers DR2/DR3/DR5/DR8. `GB` dumps them raw, including
+what start-up read before `settings_load()` could overwrite it — settings have twice been
+reported as resetting without reproducing, and that capture is what distinguishes storage
+that failed to retain from firmware that clobbered good values. DR1, DR4 and DR10 belong to the
 core and DR6/DR7 hold the RTC library's emulated date — writing those corrupts the clock.
 See `docs/DEVELOPMENT.md`.
 

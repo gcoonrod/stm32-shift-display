@@ -67,6 +67,7 @@ void cmd_get_leds(SerialCommands *sender);
 void cmd_get_bright(SerialCommands *sender);
 void cmd_set_bright(SerialCommands *sender);
 void cmd_get_disp(SerialCommands *sender);
+void cmd_get_backup(SerialCommands *sender);
 void cmd_set_disp(SerialCommands *sender);
 
 SerialCommand cmd_test_("TEST", cmd_test);
@@ -84,6 +85,7 @@ SerialCommand cmd_get_bright_("GI", cmd_get_bright);
 SerialCommand cmd_set_bright_("SI", cmd_set_bright);
 SerialCommand cmd_get_disp_("GD", cmd_get_disp);
 SerialCommand cmd_set_disp_("SD", cmd_set_disp);
+SerialCommand cmd_get_backup_("GB", cmd_get_backup);
 
 STM32RTC &rtc = STM32RTC::getInstance();
 DateTimeBuffer_t date_time_buf = {0, 1, RTC_MONTH_JANUARY, 1, 0, 0, 0};
@@ -146,6 +148,16 @@ uint8_t edit_field[3] = {0, 0, 0};
 MenuState edit_item = MENU_NONE;
 
 volatile bool alarm_fire_request = false;
+
+// What the very first backup-register read returned at boot, captured before
+// anything can overwrite it. If settings_load() misreads the magic on a cold
+// start it rewrites defaults over the saved values, which destroys them
+// permanently -- this is how to tell that apart from the registers themselves
+// having been cleared.
+uint32_t boot_magic_seen = 0xFFFFFFFFU;
+uint32_t boot_flags_seen = 0xFFFFFFFFU;
+uint32_t boot_alarm_seen = 0xFFFFFFFFU;
+uint32_t boot_bright_seen = 0xFFFFFFFFU;
 
 bool output_en = false;
 
@@ -254,6 +266,7 @@ void setup()
   serial_commands_.AddCommand(&cmd_set_bright_);
   serial_commands_.AddCommand(&cmd_get_disp_);
   serial_commands_.AddCommand(&cmd_set_disp_);
+  serial_commands_.AddCommand(&cmd_get_backup_);
 
   last_activity_ms = millis();
 
@@ -493,7 +506,12 @@ void settings_load()
 {
   enableBackupDomain();
 
-  if (getBackupRegister(BKP_MAGIC_REG) != BKP_MAGIC_VALUE)
+  boot_magic_seen = getBackupRegister(BKP_MAGIC_REG);
+  boot_flags_seen = getBackupRegister(BKP_FLAGS_REG);
+  boot_alarm_seen = getBackupRegister(BKP_ALARM_REG);
+  boot_bright_seen = getBackupRegister(BKP_BRIGHT_REG);
+
+  if (boot_magic_seen != BKP_MAGIC_VALUE)
   {
     // Backup memory has never held settings (fresh coin cell, or first run of
     // this firmware). Without the magic, arbitrary contents would read as a
@@ -1367,6 +1385,23 @@ void cmd_set_disp(SerialCommands *sender)
   settings.displayLevel = level - 1;
   settings_save();
   sender->GetSerial()->println("OK");
+}
+
+void cmd_get_backup(SerialCommands *sender)
+{
+  // "boot:<magic> <flags> <alarm> <bright>  now:<magic> <flags> <alarm> <bright>"
+  // The boot values are what settings_load() saw; the now values are what the
+  // registers hold at this moment.
+  sender->GetSerial()->printf("boot:%04lX %04lX %04lX %04lX now:%04lX %04lX %04lX %04lX expect_magic:%04X\r\n",
+                              (unsigned long)boot_magic_seen,
+                              (unsigned long)boot_flags_seen,
+                              (unsigned long)boot_alarm_seen,
+                              (unsigned long)boot_bright_seen,
+                              (unsigned long)getBackupRegister(BKP_MAGIC_REG),
+                              (unsigned long)getBackupRegister(BKP_FLAGS_REG),
+                              (unsigned long)getBackupRegister(BKP_ALARM_REG),
+                              (unsigned long)getBackupRegister(BKP_BRIGHT_REG),
+                              BKP_MAGIC_VALUE);
 }
 
 void cmd_get_leds(SerialCommands *sender)

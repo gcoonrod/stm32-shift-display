@@ -42,6 +42,13 @@
 - [x] 5.2 Use the read-back to confirm the inversion is the right way round before judging it by eye — level 1 must be dim and level 8 bright
 - [x] 5.3 Verify `TEST`, `GT`, `ST`, `SO` and `GO` are untouched, and that the unmodified `timesync.py` still reports skew 0
 
+## 5b. Settings diagnostic (folded in)
+
+- [x] 5b.1 Capture what the first backup-register read returns at start-up, before `settings_load()` can overwrite it
+- [x] 5b.2 Add a command reporting both the start-up values and the current ones, plus the expected validity marker
+- [x] 5b.3 Use it to test a genuine power cycle with distinctive values in all four settings, both cables out
+- [x] 5b.4 Record the result: all settings and the clock survived; the reported loss did not reproduce
+
 ## 6. Verification
 
 - [x] 6.1 Confirm the dimmest level is still legible in a dark room; raise the floor if it is not
@@ -52,6 +59,6 @@
 - [x] 6.6 Power-cycle and confirm both brightness levels survive alongside the other settings and the date
 - [x] 6.7 Walk the full menu and confirm the new entry has not disturbed scrolling, wrap, long-press exit or the timeout
 - [x] 6.8 Record the final flash and RAM against the 81.1% / 24.3% starting point
-- [x] 6.9 Update `docs/DEVELOPMENT.md`: the new commands, the menu entry, the brightness section, and the shared PWM frequency
+- [x] 6.9 Update `docs/DEVELOPMENT.md`: the new commands, the menu entry, the brightness section, the shared PWM frequency, and the settings diagnostic
 - [x] 6.10 Update `CLAUDE.md` where it describes the display driver and `enable()`/`disable()`
 - [x] 6.11 Run `openspec validate display-dimming`

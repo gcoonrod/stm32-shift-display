@@ -128,6 +128,7 @@ with space-separated arguments, and the receive buffer is 32 bytes
 | `SI` | `1`–`8` | `OK` | indicator brightness; out of range is rejected and changes nothing |
 | `GD` | — | `level duty` | display brightness level and its duty |
 | `SD` | `1`–`8` | `OK` | display brightness; out of range is rejected and changes nothing |
+| `GB` | — | see below | raw settings storage, for diagnosing settings loss |
 
 An unrecognized command replies `Unrecognized command [<cmd>]`.
 
@@ -284,6 +285,29 @@ after the last, returning to the clock.
 
 A firing alarm flashes the whole display and blinks D1 until any button is pressed —
 or until `AE 0` disarms it from a host.
+
+### Diagnosing settings loss
+
+`GB` reports the backup registers twice over:
+
+```
+boot:C10C 0003 032F 0206 now:C10C 0003 032F 0206 expect_magic:C10C
+      magic flags alarm bright
+```
+
+The `boot:` values are what `settings_load()` read at start-up, captured before anything
+could overwrite them; `now:` is what the registers hold at the time of the query.
+
+The distinction matters because the two ways settings can vanish look identical afterwards.
+If the backup domain failed to retain, `boot:` shows a bad magic and zeroed registers. If
+the firmware misread the magic and took the uninitialised branch, it rewrote defaults over
+good values — and every later boot then reads a *valid* magic with default contents, hiding
+the cause completely. Only the start-up capture separates them.
+
+It exists because settings were twice reported as returning to defaults without either
+instance reproducing. A controlled power cycle with distinctive values in all four settings,
+both cables out, preserved everything including the clock — so the cause is still unknown,
+and this is the instrument for catching it next time.
 
 ### Settings storage
 

@@ -64,7 +64,12 @@ _None._
   of the display, and the capability gains a requirement that display brightness is
   user-settable, persisted, and floored above invisibility.
 - `alarm`: only if the firing flash moves onto `~OE` — see below. If it stays
-  buffer-based, `alarm` is untouched.
+  buffer-based, `alarm` is untouched. *(Resolved in design: it stays buffer-based,
+  so `alarm` is untouched.)*
+- `serial-command-console`: *added during implementation.* Gains a requirement that
+  the raw settings storage, including what start-up read, is reportable over serial —
+  added after a second unreproduced report of settings returning to defaults, which
+  cannot be diagnosed after the fact without it.
 
 ## Impact
 
