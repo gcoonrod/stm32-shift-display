@@ -32,8 +32,8 @@
  *
  * With the current constants it works out to exactly one period per slice:
  *
- *   ~OE 4 kHz from 72 MHz        -> 18000 counts per period
- *   48 bits per slice            ->   375 counts per bit
+ *   ~OE 4 kHz from 48 MHz        -> 12000 counts per period
+ *   48 bits per slice            ->   250 counts per bit
  *   two compare events per bit   -> 192 kHz bit clock, 500 Hz frame at N = 8
  *
  * Changing PWM_FREQ_HZ moves all of it. The static_asserts below fail the build
@@ -67,11 +67,20 @@
  * expression, and none of the relationships below could be checked at build
  * time. The number is therefore a declared assumption, and shift_engine_clock_ok()
  * checks the running system against it before the engine is allowed to start.
- * A board brought up at a different clock fails loudly instead of shifting at
- * the wrong rate.
+ *
+ * 48 MHz, not the 72 MHz an F103 is usually assumed to run at. This board
+ * reports SystemCoreClock == 48000000, and the guard below is what found that
+ * out: the first build asserted 72 MHz and the device answered clkok=0 before
+ * any peripheral had been configured. Measure, then assert.
+ *
+ * What it changes is less than it looks. The bit clock is PWM_FREQ_HZ x 48 and
+ * the frame rate is PWM_FREQ_HZ / slices, both independent of the core clock;
+ * only the timer's reload and compare values move, 374/187 at 72 MHz becoming
+ * 249/125 here. The slice-to-~OE lock survives because 48000000 / 4000 = 12000
+ * still divides by 48 exactly.
  */
 #ifndef SHIFT_ENGINE_CORE_CLOCK_HZ
-#define SHIFT_ENGINE_CORE_CLOCK_HZ 72000000UL
+#define SHIFT_ENGINE_CORE_CLOCK_HZ 48000000UL
 #endif
 #define SHIFT_ENGINE_TIMER_HZ ((uint32_t)SHIFT_ENGINE_CORE_CLOCK_HZ)
 

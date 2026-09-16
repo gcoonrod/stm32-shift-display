@@ -213,6 +213,113 @@ void ShiftDisplay::update_display()
     }
 }
 
+/**
+ * Rebuild the refresh waveform.
+ *
+ * The bit order matches update_display() exactly, because it has to: bytes go
+ * out from _buffer[5] down to _buffer[0], so that _buffer[0] ends up in the last
+ * register of the chain and reads as the leftmost digit, and each byte goes out
+ * LSB first, with the decimal point in bit 0.
+ *
+ * A digit is lit in a slice when the slice index is below its level, so a level
+ * of k lights it in slices 0..k-1 -- k of SHIFT_ENGINE_SLICES, which is exactly
+ * k/N of the light. Which slices they are does not matter, only how many, because
+ * every slice spans one whole ~OE period and so carries the same on-time.
+ */
+void ShiftDisplay::build_waveform()
+{
+    for (uint8_t slice = 0; slice < SHIFT_ENGINE_SLICES; slice++)
+    {
+        uint32_t *words = &_wave[(uint32_t)slice * SHIFT_ENGINE_WORDS_PER_SLICE];
+        uint8_t w = 0;
+
+        for (int8_t d = _char_buffer_size - 1; d >= 0; d--)
+        {
+            uint8_t pattern = 0;
+
+            if (slice < _digit_levels[d])
+            {
+                pattern = map_ascii(_buffer[d]);
+                if (GET_BIT(_dp_state, d))
+                {
+                    SET_BIT(pattern, DP_BM);
+                }
+            }
+
+            for (uint8_t bit = 0; bit < 8; bit++, w++)
+            {
+                // Present the bit and hold the clock low. Only the driver's own
+                // pins are named, so ~OE is untouched whatever the word says.
+                uint32_t word = (pattern & (1U << bit)) ? _data_set : _data_clr;
+                word |= _clk_clr;
+
+                // The latch pulse, riding in the first two words of the slice.
+                if (w == 0)
+                {
+                    word |= _latch_set;
+                }
+                else if (w == 1)
+                {
+                    word |= _latch_clr;
+                }
+
+                words[w] = word;
+            }
+        }
+    }
+}
+
+void ShiftDisplay::setDigitLevel(uint8_t index, uint8_t slices)
+{
+    if (index >= _char_buffer_size)
+    {
+        return;
+    }
+
+    _digit_levels[index] = (slices > SHIFT_ENGINE_SLICES) ? SHIFT_ENGINE_SLICES : slices;
+    build_waveform();
+}
+
+uint8_t ShiftDisplay::getDigitLevel(uint8_t index) const
+{
+    return (index < _char_buffer_size) ? _digit_levels[index] : 0;
+}
+
+void ShiftDisplay::setAllDigitLevels(uint8_t slices)
+{
+    uint8_t level = (slices > SHIFT_ENGINE_SLICES) ? SHIFT_ENGINE_SLICES : slices;
+
+    for (uint8_t i = 0; i < _char_buffer_size; i++)
+    {
+        _digit_levels[i] = level;
+    }
+
+    build_waveform();
+}
+
+void ShiftDisplay::shiftSliceByHand(uint8_t slice)
+{
+    if (!_initialized || !_engine_capable || slice >= SHIFT_ENGINE_SLICES)
+    {
+        return;
+    }
+
+    const uint32_t *words = &_wave[(uint32_t)slice * SHIFT_ENGINE_WORDS_PER_SLICE];
+
+    for (uint8_t w = 0; w < SHIFT_ENGINE_WORDS_PER_SLICE; w++)
+    {
+        // What the data channel writes on the CH1 compare.
+        _data_port->BSRR = words[w];
+        SHIFT_EDGE_DELAY();
+
+        // What the clock channel writes on the CH2 compare.
+        _data_port->BSRR = _clk_high_word;
+        SHIFT_EDGE_DELAY();
+    }
+
+    _data_port->BSRR = _clk_clr;
+}
+
 void ShiftDisplay::write_output_enable(uint16_t brightness)
 {
     if (brightness > _max_duty)
@@ -312,6 +419,22 @@ void ShiftDisplay::begin(uint32_t delay_us, uint16_t max_duty)
     _oe_mask = STM_GPIO_PIN(oe);
     _pins_safe = !oe_collides();
 
+    // One DMA channel writes one port, and the waveform carries data, clock and
+    // latch bits together, so all three have to live on the same port. On this
+    // board they do -- PA3, PA4 and PA2 -- but the pin map is a variant's to
+    // change, so this is checked rather than assumed.
+    _engine_capable = (_data_port == _clk_port) && (_data_port == _latch_port);
+
+    // The single word the clock channel replays for every rising edge.
+    _clk_high_word = _clk_set;
+
+    for (uint8_t i = 0; i < _char_buffer_size; i++)
+    {
+        _digit_levels[i] = SHIFT_ENGINE_SLICES;
+    }
+
+    build_waveform();
+
     _max_duty = max_duty;
     _brightness = 0;
     write_output_enable(0); // start blank, as the 10k pull-up already does
@@ -390,10 +513,16 @@ void ShiftDisplay::shiftOutAscii(char ascii, bool dp)
     shiftOutByte(map_ascii(ascii), dp);
 }
 
-void ShiftDisplay::writeDisplay(const char *buffer, uint8_t dp)
+void ShiftDisplay::setContent(const char *buffer, uint8_t dp)
 {
     update_buffer(buffer);
     _dp_state = dp;
+    build_waveform();
+}
+
+void ShiftDisplay::writeDisplay(const char *buffer, uint8_t dp)
+{
+    setContent(buffer, dp);
     update_display();
 }
 

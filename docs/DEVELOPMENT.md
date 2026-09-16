@@ -63,8 +63,15 @@ with `** Verified OK **` and `** Resetting Target **`.
 The driver writes the shift registers through `BSRR` rather than `digitalWrite`. `begin()`
 resolves each pin to its port and bit once and precomputes the `BSRR` words; the inner loop
 is then a select and two stores, about **9 instructions per bit** against roughly 117
-before. A full 48-bit refresh went from **~78 µs to ~6.7 µs**, a shift clock of roughly
-615 kHz to about **7 MHz**.
+before. A full 48-bit refresh went from **~117 µs to ~9 µs**, a shift clock of roughly
+410 kHz to about **5.3 MHz**.
+
+> These figures were first written as 78 µs → 6.7 µs and 615 kHz → 7 MHz. That was
+> arithmetic done at an assumed 72 MHz; **this board runs at 48 MHz** (`SystemCoreClock`
+> reports 48000000, and `WD` prints it). 117 instructions × 48 bits ÷ 72 MHz is 78 µs
+> exactly, which is how the original numbers arose. The conclusion is unchanged — no
+> failure was observed at the fastest rate the loop can produce — only the rate that
+> describes it.
 
 `~OE` shares GPIOA with the data, clock, latch and clear lines and belongs to the
 brightness timer, so **every write names the pins it owns**. A port-wide write

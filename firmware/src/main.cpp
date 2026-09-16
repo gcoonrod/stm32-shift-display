@@ -92,6 +92,11 @@ void cmd_get_backup(SerialCommands *sender);
 void cmd_set_nops(SerialCommands *sender);
 void cmd_set_pattern(SerialCommands *sender);
 #endif
+#ifdef SHIFT_ENGINE_VERIFY
+void cmd_wave_verify(SerialCommands *sender);
+void cmd_wave_level(SerialCommands *sender);
+void cmd_wave_dump(SerialCommands *sender);
+#endif
 void cmd_set_disp(SerialCommands *sender);
 
 SerialCommand cmd_test_("TEST", cmd_test);
@@ -113,6 +118,16 @@ SerialCommand cmd_get_backup_("GB", cmd_get_backup);
 #ifdef SHIFT_SWEEP
 SerialCommand cmd_set_nops_("SN", cmd_set_nops);
 SerialCommand cmd_set_pattern_("TP", cmd_set_pattern);
+#endif
+#ifdef SHIFT_ENGINE_VERIFY
+/* Replays the waveform from the CPU, writing exactly the words and in exactly
+   the order the two DMA channels will. Establishes that the buffer is right
+   before any peripheral is configured -- debugging a DMA display by eye is hard
+   enough without also wondering whether what it replays was ever correct. */
+bool wave_verify = false;
+SerialCommand cmd_wave_verify_("WV", cmd_wave_verify);
+SerialCommand cmd_wave_level_("WL", cmd_wave_level);
+SerialCommand cmd_wave_dump_("WD", cmd_wave_dump);
 #endif
 
 STM32RTC &rtc = STM32RTC::getInstance();
@@ -256,6 +271,26 @@ void handleEvent(AceButton *, uint8_t, uint8_t);
 void irq_rtc_seconds(void *data);
 void irq_timer_led();
 
+/**
+ * Write content to the display.
+ *
+ * With the waveform replay running, content goes into the buffer and the refresh
+ * picks it up; shifting and latching here as well would fight the replay and show
+ * as a flick once a second. Without it, this is the shipping path unchanged.
+ */
+static inline void display_write(const char *buf, uint8_t dp)
+{
+#ifdef SHIFT_ENGINE_VERIFY
+  if (wave_verify)
+  {
+    display.setContent(buf, dp);
+    return;
+  }
+#endif
+  display.writeDisplay(buf, dp);
+  display.latch();
+}
+
 static inline bool blink_on()
 {
   return ((millis() / BLINK_PERIOD_MS) % 2) == 0;
@@ -302,6 +337,11 @@ void setup()
   serial_commands_.AddCommand(&cmd_set_nops_);
   serial_commands_.AddCommand(&cmd_set_pattern_);
 #endif
+#ifdef SHIFT_ENGINE_VERIFY
+  serial_commands_.AddCommand(&cmd_wave_verify_);
+  serial_commands_.AddCommand(&cmd_wave_level_);
+  serial_commands_.AddCommand(&cmd_wave_dump_);
+#endif
 
   last_activity_ms = millis();
 
@@ -345,6 +385,21 @@ void loop()
   render();
   update_leds();
   update_display_brightness();
+
+#ifdef SHIFT_ENGINE_VERIFY
+  /* Replay every slice back to back, continuously, exactly as the DMA engine
+     will. Running it here rather than inside render() matters: the engine
+     refreshes whether or not the time changed, and the latch-the-previous-slice
+     arrangement only reads correctly when slices follow each other without a
+     gap. */
+  if (wave_verify)
+  {
+    for (uint8_t s = 0; s < ShiftDisplay::maxDigitLevel(); s++)
+    {
+      display.shiftSliceByHand(s);
+    }
+  }
+#endif
 
   // reset the button states
   btnSetState = ButtonState::UNCHANGED;
@@ -774,8 +829,7 @@ void render()
     memcpy(buf, (test_pattern == 1) ? "888888" : "012345", 6);
     if (dp != last_rendered_dp || memcmp(buf, last_rendered, 6) != 0)
     {
-      display.writeDisplay(buf, dp);
-      display.latch();
+      display_write(buf, dp);
       memcpy(last_rendered, buf, 6);
       last_rendered[6] = '\0';
       last_rendered_dp = dp;
@@ -784,8 +838,7 @@ void render()
     {
       // Keep re-shifting so a marginal rate has chances to fail, rather than
       // latching once and sitting on a result that happened to be correct.
-      display.writeDisplay(buf, dp);
-      display.latch();
+      display_write(buf, dp);
     }
     return;
   }
@@ -830,8 +883,7 @@ void render()
   // would otherwise re-shift six characters every pass of the loop.
   if (dp != last_rendered_dp || memcmp(buf, last_rendered, 6) != 0)
   {
-    display.writeDisplay(buf, dp);
-    display.latch();
+    display_write(buf, dp);
     memcpy(last_rendered, buf, 6);
     last_rendered[6] = '\0';
     last_rendered_dp = dp;
@@ -1598,6 +1650,116 @@ void cmd_get_backup(SerialCommands *sender)
   print4hex(out, BKP_MAGIC_VALUE);
   out->println();
 }
+
+#ifdef SHIFT_ENGINE_VERIFY
+void cmd_wave_verify(SerialCommands *sender)
+{
+  char *arg = sender->Next();
+  Stream *out = sender->GetSerial();
+
+  if (arg == NULL)
+  {
+    out->print("wave=");
+    out->println(wave_verify ? 1 : 0);
+    return;
+  }
+
+  wave_verify = (atoi(arg) != 0);
+
+  if (!wave_verify)
+  {
+    // Leaving replay: put the shipping path back in charge of what is latched.
+    time_dirty = true;
+  }
+
+  out->print("wave=");
+  out->println(wave_verify ? 1 : 0);
+}
+
+void cmd_wave_level(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+  char *pos_arg = sender->Next();
+
+  if (pos_arg == NULL)
+  {
+    for (uint8_t i = 0; i < 6; i++)
+    {
+      out->print(display.getDigitLevel(i));
+      out->print(i == 5 ? '\n' : ' ');
+    }
+    return;
+  }
+
+  char *lvl_arg = sender->Next();
+  if (lvl_arg == NULL)
+  {
+    out->println("ERROR NO_LEVEL");
+    return;
+  }
+
+  int pos = atoi(pos_arg);
+  int lvl = atoi(lvl_arg);
+
+  if (pos < 0 || pos > 5)
+  {
+    out->print("ERROR POS OUT OF RANGE: ");
+    out->println(pos_arg);
+    return;
+  }
+
+  if (lvl < 0 || lvl > (int)ShiftDisplay::maxDigitLevel())
+  {
+    out->print("ERROR LEVEL OUT OF RANGE: ");
+    out->println(lvl_arg);
+    return;
+  }
+
+  display.setDigitLevel((uint8_t)pos, (uint8_t)lvl);
+  out->println("OK");
+}
+
+void cmd_wave_dump(SerialCommands *sender)
+{
+  Stream *out = sender->GetSerial();
+
+  out->print("slices=");
+  out->print(SHIFT_ENGINE_SLICES);
+  out->print(" words/slice=");
+  out->print(SHIFT_ENGINE_WORDS_PER_SLICE);
+  out->print(" bytes=");
+  out->print(SHIFT_ENGINE_BUFFER_BYTES);
+  out->print(" arr=");
+  out->print(SHIFT_ENGINE_ARR);
+  out->print(" ccr=");
+  out->print(SHIFT_ENGINE_CCR_CLOCK);
+  out->print(" bitclk=");
+  out->print(SHIFT_ENGINE_BIT_CLOCK_HZ);
+  out->print(" frame=");
+  out->print(SHIFT_ENGINE_FRAME_HZ);
+  out->print(" capable=");
+  out->print(display.engineCapable() ? 1 : 0);
+  out->print(" clkok=");
+  out->print(shift_engine_clock_ok() ? 1 : 0);
+  out->print(" coreclk=");
+  out->print(SystemCoreClock);
+  out->print(" assumed=");
+  out->println((uint32_t)SHIFT_ENGINE_CORE_CLOCK_HZ);
+
+  // The first four words of slice 0: enough to see the latch pulse riding in
+  // words 0 and 1, and that no word touches the ~OE bit.
+  const uint32_t *w = display.waveform();
+  for (uint8_t i = 0; i < 4; i++)
+  {
+    out->print("w");
+    out->print(i);
+    out->print("=");
+    print4hex(out, (uint16_t)(w[i] >> 16));
+    print4hex(out, (uint16_t)(w[i] & 0xFFFF));
+    out->print(i == 3 ? '\n' : ' ');
+  }
+}
+#endif
 
 #ifdef SHIFT_SWEEP
 void cmd_set_nops(SerialCommands *sender)

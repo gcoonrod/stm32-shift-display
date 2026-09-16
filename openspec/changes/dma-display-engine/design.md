@@ -119,16 +119,27 @@ The arithmetic lands on one period exactly, which is a pleasant accident of the 
 constants:
 
 ```
-  ~OE:  4 kHz from TIM2 at 72 MHz          -> 18000 counts per period
-  TIM1: ARR+1 = 375, two compares per bit  ->   375 counts per bit
-        48 bits per slice                  -> 18000 counts per slice
+  ~OE:  4 kHz from TIM2 at 48 MHz          -> 12000 counts per period
+  TIM1: ARR+1 = 250, two compares per bit  ->   250 counts per bit
+        48 bits per slice                  -> 12000 counts per slice
                                               ^^^^^ equal
 ```
 
-So with **TIM1 ARR = 374** (375 counts), CH1 compare near 0 and CH2 near 187:
+**48 MHz, not 72.** This was written first at 72 MHz, which is what an F103 is usually
+assumed to run at; the board reports `SystemCoreClock == 48000000`, and the runtime guard
+found it before any peripheral was configured — the first flashed build answered `clkok=0`.
+It also means `docs/DEVELOPMENT.md`'s shift-rate figures from `bsrr-shift-out` were 72 MHz
+arithmetic and about 1.5x optimistic; corrected there.
 
-- bit clock **192 kHz** — a 36x margin under the ~7 MHz `bsrr-shift-out` ran at without
-  failure, and that 7 MHz is itself only a floor on the true limit, since no failure
+Less changes than it looks. The bit clock is `PWM_FREQ_HZ x 48` and the frame rate is
+`PWM_FREQ_HZ / slices`, both independent of the core clock, so both survive untouched. Only
+the reload and compare move — 374/187 becomes 249/125 — and the lock survives because
+48000000 / 4000 = 12000 still divides by 48 exactly.
+
+So with **TIM1 ARR = 249** (250 counts), CH1 compare near 0 and CH2 near 125:
+
+- bit clock **192 kHz** — a 28x margin under the ~5.3 MHz `bsrr-shift-out` ran at without
+  failure, and that 5.3 MHz is itself only a floor on the true limit, since no failure
   point was found to measure back from
 - slice **250 µs**, exactly one `~OE` period
 - frame **500 Hz** at N = 8 slices, comfortably flicker-free

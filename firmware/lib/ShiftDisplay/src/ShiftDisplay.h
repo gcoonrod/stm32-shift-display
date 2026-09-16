@@ -11,6 +11,7 @@
 
 #include <Arduino.h>
 #include "Print.h"
+#include "ShiftDisplayEngine.h"
 
 class ShiftDisplay: public Print
 {
@@ -76,6 +77,39 @@ private:
     static const uint8_t _char_buffer_size = 6;
     char _buffer[_char_buffer_size] = {' ', ' ', ' ', ' ', ' ', ' '};
 
+    /**
+     * The refresh waveform: one BSRR word per bit, SHIFT_ENGINE_SLICES slices of
+     * 48 bits each. A DMA channel replays this into the port with memory
+     * increment on, one word per timer compare event.
+     *
+     * Each word presents a data bit with the shift clock held low. The rising
+     * clock edge carries no data, so it is a single constant word replayed by a
+     * second channel with increment off -- which is what keeps this at 48 words
+     * per slice rather than 96.
+     *
+     * The latch rides in the first two words of every slice: word 0 raises RCLK
+     * and word 1 drops it, so the edge at the start of slice k+1 presents what
+     * slice k shifted in. The display therefore runs one slice behind, which is
+     * 2 ms of constant offset on a stream that never ends and nothing can
+     * observe. It costs no extra words and no third channel; appending latch
+     * words instead would not work, because the clock channel keeps firing
+     * during them and extra clocks push data off a chain exactly as long as its
+     * data.
+     */
+    uint32_t _wave[SHIFT_ENGINE_WORDS_TOTAL];
+
+    // The one word the clock channel replays. It lives in memory rather than
+    // being written by the CPU because a DMA channel needs a source address.
+    uint32_t _clk_high_word;
+
+    // Per-position relative brightness, in slices out of SHIFT_ENGINE_SLICES.
+    // Full for every position unless something dims one.
+    uint8_t _digit_levels[_char_buffer_size];
+
+    // The engine drives data, clock and latch from one port with one channel, so
+    // all three must share a port. Checked in begin() rather than assumed.
+    bool _engine_capable;
+
 protected:
     // Writes the output-enable line. ~OE is active low, so the duty written to
     // the pin is the complement of the brightness: this is the one place that
@@ -85,6 +119,10 @@ protected:
     // True if any driven pin shares a port bit with ~OE. Checked once in begin();
     // the driver refuses to initialise if it is.
     bool oe_collides() const;
+
+    // Rebuild the whole waveform from the character buffer, the decimal points
+    // and the per-digit levels.
+    void build_waveform();
 
     uint8_t map_ascii(char ascii);
     void update_buffer(const char* new_content);
@@ -114,6 +152,36 @@ public:
 
     void update();
 
+    /**
+     * Per-digit relative brightness, 0..SHIFT_ENGINE_SLICES.
+     *
+     * This is a second modulation multiplying the global ~OE brightness rather
+     * than replacing it: a digit at full here is as bright as the display's
+     * configured level allows, and no brighter.
+     */
+    void setDigitLevel(uint8_t index, uint8_t slices);
+    uint8_t getDigitLevel(uint8_t index) const;
+    void setAllDigitLevels(uint8_t slices);
+    static uint8_t maxDigitLevel() { return SHIFT_ENGINE_SLICES; }
+
+    // False if the pin map puts data, clock and latch on different ports, in
+    // which case one DMA channel cannot drive them and the engine cannot run.
+    bool engineCapable() const { return _engine_capable; }
+
+    // Read-only view of the refresh waveform, for verification.
+    const uint32_t *waveform() const { return _wave; }
+
+    /**
+     * Shift one slice out through the CPU, writing exactly the words and in
+     * exactly the order the two DMA channels will.
+     *
+     * This exists so that "the words are right" can be established before any
+     * peripheral is configured. Debugging a DMA display by eye is hard enough
+     * without also wondering whether the buffer it is replaying was ever
+     * correct.
+     */
+    void shiftSliceByHand(uint8_t slice);
+
     void shiftOutByte(uint8_t byte, bool dp);
     void shiftOutByte(uint8_t byte)
     {
@@ -125,6 +193,11 @@ public:
     {
         shiftOutAscii(ascii, false);
     }
+
+    // Update the character buffer and rebuild the waveform, without shifting
+    // anything out. Once the engine is running this is all a caller needs; the
+    // refresh picks the new words up on its next pass.
+    void setContent(const char* buffer, uint8_t dp);
 
     void writeDisplay(const char* buffer, uint8_t dp);
 

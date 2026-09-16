@@ -14,8 +14,8 @@
 
 ## 3. Build the waveform, with the engine stopped
 
-- [ ] 3.1 Add the buffer and the word builder: one data word per bit, `SER` set-or-clear with `SRCLK` low, and the `RCLK` set/clear bits in words 0 and 1 of each slice
-- [ ] 3.2 Add the single constant clock-high word the second channel will replay
+- [x] 3.1 Add the buffer and the word builder: one data word per bit, `SER` set-or-clear with `SRCLK` low, and the `RCLK` set/clear bits in words 0 and 1 of each slice. *`build_waveform()`. Bit order matches `update_display()`/`shiftOutByte()` exactly — bytes `_buffer[5]`..`_buffer[0]`, LSB first, DP in bit 0. Verified from the device: `w0=00180004` (clear SER|SRCLK, set RCLK), `w1` releases RCLK, `w2+` carry no latch bits, and no word sets bit 0 or 16.*
+- [x] 3.2 Add the single constant clock-high word the second channel will replay. *`_clk_high_word`, a member so the DMA channel has a source address.*
 - [ ] 3.3 Render the current display buffer into one slice and shift that slice out through the *existing* bit-banged path; confirm the display is identical to today
 - [ ] 3.4 Confirm the latch-the-previous-slice arrangement produces the right content when slices are shifted back to back, still by hand
 
