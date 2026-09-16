@@ -4,7 +4,6 @@
 #include <STM32RTC.h>
 #include <AceButton.h>
 #include <SerialCommands.h>
-#include <time.h>
 #include <stdlib.h>
 #include "header.h"
 
@@ -1108,6 +1107,43 @@ void irq_rtc_seconds(void *data)
   }
 }
 
+
+/**
+ * Print::print() has no zero-padding and no hex width, which is the only reason
+ * these call sites reached for printf -- and Print::printf drags in vdprintf ->
+ * vasnprintf -> svfprintf -> printf_i, about 2.7 KB, to format "%d" and "%s".
+ * These three do what the eleven call sites actually needed.
+ */
+static void print2(Print *out, uint8_t value)
+{
+  if (value < 10)
+  {
+    out->print('0');
+  }
+  out->print(value);
+}
+
+static void print4hex(Print *out, uint32_t value)
+{
+  static const char digits[] = "0123456789ABCDEF";
+  out->print(digits[(value >> 12) & 0xF]);
+  out->print(digits[(value >> 8) & 0xF]);
+  out->print(digits[(value >> 4) & 0xF]);
+  out->print(digits[value & 0xF]);
+}
+
+// "ERROR <FIELD> OUT OF RANGE {<value>}: <raw>", with no trailing newline, which
+// is what these replies have always looked like.
+static void print_range_error(Print *out, const char *field, int value, const char *raw)
+{
+  out->print("ERROR ");
+  out->print(field);
+  out->print(" OUT OF RANGE {");
+  out->print(value);
+  out->print("}: ");
+  out->print(raw);
+}
+
 void cmd_unrecognized(SerialCommands *sender, const char *cmd)
 {
   sender->GetSerial()->print(F("Unrecognized command ["));
@@ -1132,7 +1168,7 @@ void cmd_set_hour(SerialCommands *sender)
   int hour = atoi(hour_str);
   if (hour < 0 || hour >= 24)
   {
-    sender->GetSerial()->printf("ERROR HOUR OUT OF RANGE {%d}: %s", hour, hour_str);
+    print_range_error(sender->GetSerial(), "HOUR", hour, hour_str);
     return;
   }
 
@@ -1152,7 +1188,7 @@ void cmd_set_minute(SerialCommands *sender)
   int m = atoi(m_str);
   if (m < 0 || m >= 60)
   {
-    sender->GetSerial()->printf("ERROR MINUTE OUT OF RANGE {%d}: %s", m, m_str);
+    print_range_error(sender->GetSerial(), "MINUTE", m, m_str);
     return;
   }
 
@@ -1172,7 +1208,7 @@ void cmd_set_second(SerialCommands *sender)
   int second = atoi(second_str);
   if (second < 0 || second >= 60)
   {
-    sender->GetSerial()->printf("ERROR SECOND OUT OF RANGE {%d}: %s", second, second_str);
+    print_range_error(sender->GetSerial(), "SECOND", second, second_str);
     return;
   }
 
@@ -1180,14 +1216,75 @@ void cmd_set_second(SerialCommands *sender)
   rtc.setSeconds(second);
 }
 
-tm* unixTimestampToTime(const char *timestampStr) {
-  // Convert the timestamp string to a time_t object
-  time_t timestamp = atol(timestampStr); 
+/**
+ * Civil-date arithmetic, replacing localtime() and mktime().
+ *
+ * Those two cost about 5.2 KB between them, and almost none of it is date
+ * maths: localtime reaches tzset, which reaches sscanf to parse a TZ string
+ * this firmware never sets, which drags in the whole formatted-input engine.
+ * The conversion itself is two well-known integer routines over the proleptic
+ * Gregorian calendar -- no tables, no locale, no timezone database.
+ *
+ * Days are counted from 1970-01-01. Month is 1..12 here and everywhere else;
+ * see cmd_set_time for why that used to be 0..11 on this path alone.
+ */
+static int32_t days_from_civil(int32_t y, uint8_t m, uint8_t d)
+{
+  y -= (m <= 2);
+  int32_t era = (y >= 0 ? y : y - 399) / 400;
+  uint32_t yoe = (uint32_t)(y - era * 400);
+  uint32_t doy = (153U * (m + (m > 2 ? -3 : 9)) + 2U) / 5U + d - 1U;
+  uint32_t doe = yoe * 365U + yoe / 4U - yoe / 100U + doy;
+  return era * 146097 + (int32_t)doe - 719468;
+}
 
-  timestamp += timezoneOffset * 60 * 60;
+static void civil_from_days(int32_t z, int32_t *y, uint8_t *m, uint8_t *d)
+{
+  z += 719468;
+  int32_t era = (z >= 0 ? z : z - 146096) / 146097;
+  uint32_t doe = (uint32_t)(z - era * 146097);
+  uint32_t yoe = (doe - doe / 1460U + doe / 36524U - doe / 146096U) / 365U;
+  int32_t yr = (int32_t)yoe + era * 400;
+  uint32_t doy = doe - (365U * yoe + yoe / 4U - yoe / 100U);
+  uint32_t mp = (5U * doy + 2U) / 153U;
+  *d = (uint8_t)(doy - (153U * mp + 2U) / 5U + 1U);
+  *m = (uint8_t)(mp + (mp < 10U ? 3U : -9U));
+  *y = yr + (*m <= 2);
+}
 
-  // Use localtime to convert the timestamp to a tm struct
-  return localtime(&timestamp); 
+typedef struct
+{
+  int32_t year;   // full year, e.g. 2026
+  uint8_t month;  // 1..12
+  uint8_t day;
+  uint8_t hours;
+  uint8_t minutes;
+  uint8_t seconds;
+} CivilTime_t;
+
+static void civil_from_timestamp(int32_t ts, CivilTime_t *out)
+{
+  int32_t days = ts / 86400;
+  int32_t rem = ts % 86400;
+  if (rem < 0)
+  {
+    rem += 86400;
+    days -= 1;
+  }
+
+  civil_from_days(days, &out->year, &out->month, &out->day);
+  out->hours = (uint8_t)(rem / 3600);
+  out->minutes = (uint8_t)((rem % 3600) / 60);
+  out->seconds = (uint8_t)(rem % 60);
+}
+
+// Returned 64-bit to match what mktime produced here: time_t is 64 bits in this
+// toolchain, and an out-of-range date can exceed 32 bits -- GT printed exactly
+// such a value before this change, and still must.
+static int64_t timestamp_from_civil(const CivilTime_t *t)
+{
+  return (int64_t)days_from_civil(t->year, t->month, t->day) * 86400LL +
+         (int64_t)t->hours * 3600LL + (int64_t)t->minutes * 60LL + t->seconds;
 }
 
 void cmd_set_time(SerialCommands *sender)
@@ -1199,21 +1296,29 @@ void cmd_set_time(SerialCommands *sender)
     return;
   }
 
-  tm *time = unixTimestampToTime(timestampStr);
+  int32_t timestamp = (int32_t)atol(timestampStr);
+  timestamp += timezoneOffset * 60 * 60;
 
-  date_time_buf.hours = time->tm_hour;
-  date_time_buf.minutes = time->tm_min;
-  date_time_buf.seconds = time->tm_sec;
-  date_time_buf.day = time->tm_mday;
-  date_time_buf.month = time->tm_mon;
-  date_time_buf.year = time->tm_year - 100;
+  CivilTime_t t;
+  civil_from_timestamp(timestamp, &t);
 
-  rtc.setHours(time->tm_hour);
-  rtc.setMinutes(time->tm_min);
-  rtc.setSeconds(time->tm_sec);
-  rtc.setDay(time->tm_mday);
-  rtc.setMonth(time->tm_mon);
-  rtc.setYear(time->tm_year - 100);
+  // Month is stored 1..12, matching the RTC and the menu editor. It used to be
+  // stored 0..11 on this path only; ST and GT still round-tripped because the
+  // same offset was applied on both sides, so the disagreement only showed
+  // between the serial and menu paths.
+  date_time_buf.hours = t.hours;
+  date_time_buf.minutes = t.minutes;
+  date_time_buf.seconds = t.seconds;
+  date_time_buf.day = t.day;
+  date_time_buf.month = t.month;
+  date_time_buf.year = (uint8_t)(t.year - 2000);
+
+  rtc.setHours(t.hours);
+  rtc.setMinutes(t.minutes);
+  rtc.setSeconds(t.seconds);
+  rtc.setDay(t.day);
+  rtc.setMonth(t.month);
+  rtc.setYear((uint8_t)(t.year - 2000));
 
   sender->GetSerial()->println("OK");
 }
@@ -1221,22 +1326,21 @@ void cmd_set_time(SerialCommands *sender)
 void cmd_get_time(SerialCommands *sender)
 {
 
-  // convert the date_time_buf to tm struct
-  tm time = {0};
-  time.tm_hour = date_time_buf.hours;
-  time.tm_min = date_time_buf.minutes;
-  time.tm_sec = date_time_buf.seconds;
-  time.tm_mday = date_time_buf.day;
-  time.tm_mon = date_time_buf.month;
-  time.tm_year = date_time_buf.year + 100;
+  CivilTime_t t;
+  t.year = 2000 + date_time_buf.year;
+  t.month = date_time_buf.month;
+  t.day = date_time_buf.day;
+  t.hours = date_time_buf.hours;
+  t.minutes = date_time_buf.minutes;
+  t.seconds = date_time_buf.seconds;
+
+  int64_t timestamp = timestamp_from_civil(&t);
 
   // Apply the timezone offset to change the time to UTC
-  time.tm_sec -= timezoneOffset * 60 * 60;
-
-  time_t timestamp = mktime(&time);
+  timestamp -= (int64_t)timezoneOffset * 60 * 60;
 
   // Return the current time as a Unix timestamp
-  sender->GetSerial()->println(timestamp);
+  sender->GetSerial()->println((long long)timestamp);
 }
 
 void cmd_set_offset(SerialCommands *sender)
@@ -1274,7 +1378,7 @@ void cmd_set_mode(SerialCommands *sender)
   int mode = atoi(mode_str);
   if (mode != 12 && mode != 24)
   {
-    sender->GetSerial()->printf("ERROR MODE OUT OF RANGE {%d}: %s", mode, mode_str);
+    print_range_error(sender->GetSerial(), "MODE", mode, mode_str);
     return;
   }
 
@@ -1286,10 +1390,12 @@ void cmd_set_mode(SerialCommands *sender)
 void cmd_get_alarm(SerialCommands *sender)
 {
   // "<hh> <mm> <armed>"
-  sender->GetSerial()->printf("%02d %02d %d\r\n",
-                              settings.alarmHour,
-                              settings.alarmMinute,
-                              settings.alarmArmed ? 1 : 0);
+  Print *out = sender->GetSerial();
+  print2(out, settings.alarmHour);
+  out->print(' ');
+  print2(out, settings.alarmMinute);
+  out->print(' ');
+  out->println(settings.alarmArmed ? 1 : 0);
 }
 
 void cmd_set_alarm(SerialCommands *sender)
@@ -1311,14 +1417,14 @@ void cmd_set_alarm(SerialCommands *sender)
   int hour = atoi(hour_str);
   if (hour < 0 || hour >= 24)
   {
-    sender->GetSerial()->printf("ERROR HOUR OUT OF RANGE {%d}: %s", hour, hour_str);
+    print_range_error(sender->GetSerial(), "HOUR", hour, hour_str);
     return;
   }
 
   int minute = atoi(minute_str);
   if (minute < 0 || minute >= 60)
   {
-    sender->GetSerial()->printf("ERROR MINUTE OUT OF RANGE {%d}: %s", minute, minute_str);
+    print_range_error(sender->GetSerial(), "MINUTE", minute, minute_str);
     return;
   }
 
@@ -1340,7 +1446,7 @@ void cmd_alarm_enable(SerialCommands *sender)
   int enable = atoi(enable_str);
   if (enable != 0 && enable != 1)
   {
-    sender->GetSerial()->printf("ERROR STATE OUT OF RANGE {%d}: %s", enable, enable_str);
+    print_range_error(sender->GetSerial(), "STATE", enable, enable_str);
     return;
   }
 
@@ -1361,9 +1467,10 @@ void cmd_get_disp(SerialCommands *sender)
 {
   // "<level> <duty>" -- the duty makes the active-low inversion checkable from a
   // host: a low level must read a low duty, not a high one.
-  sender->GetSerial()->printf("%d %d\r\n",
-                              settings.displayLevel + 1,
-                              disp_gamma[effective_display_level()]);
+  Print *out = sender->GetSerial();
+  out->print(settings.displayLevel + 1);
+  out->print(' ');
+  out->println(disp_gamma[effective_display_level()]);
 }
 
 void cmd_set_disp(SerialCommands *sender)
@@ -1378,7 +1485,7 @@ void cmd_set_disp(SerialCommands *sender)
   int level = atoi(level_str);
   if (level < 1 || level > DISP_LEVELS)
   {
-    sender->GetSerial()->printf("ERROR LEVEL OUT OF RANGE {%d}: %s", level, level_str);
+    print_range_error(sender->GetSerial(), "LEVEL", level, level_str);
     return;
   }
 
@@ -1392,16 +1499,26 @@ void cmd_get_backup(SerialCommands *sender)
   // "boot:<magic> <flags> <alarm> <bright>  now:<magic> <flags> <alarm> <bright>"
   // The boot values are what settings_load() saw; the now values are what the
   // registers hold at this moment.
-  sender->GetSerial()->printf("boot:%04lX %04lX %04lX %04lX now:%04lX %04lX %04lX %04lX expect_magic:%04X\r\n",
-                              (unsigned long)boot_magic_seen,
-                              (unsigned long)boot_flags_seen,
-                              (unsigned long)boot_alarm_seen,
-                              (unsigned long)boot_bright_seen,
-                              (unsigned long)getBackupRegister(BKP_MAGIC_REG),
-                              (unsigned long)getBackupRegister(BKP_FLAGS_REG),
-                              (unsigned long)getBackupRegister(BKP_ALARM_REG),
-                              (unsigned long)getBackupRegister(BKP_BRIGHT_REG),
-                              BKP_MAGIC_VALUE);
+  Print *out = sender->GetSerial();
+  out->print("boot:");
+  print4hex(out, boot_magic_seen);
+  out->print(' ');
+  print4hex(out, boot_flags_seen);
+  out->print(' ');
+  print4hex(out, boot_alarm_seen);
+  out->print(' ');
+  print4hex(out, boot_bright_seen);
+  out->print(" now:");
+  print4hex(out, getBackupRegister(BKP_MAGIC_REG));
+  out->print(' ');
+  print4hex(out, getBackupRegister(BKP_FLAGS_REG));
+  out->print(' ');
+  print4hex(out, getBackupRegister(BKP_ALARM_REG));
+  out->print(' ');
+  print4hex(out, getBackupRegister(BKP_BRIGHT_REG));
+  out->print(" expect_magic:");
+  print4hex(out, BKP_MAGIC_VALUE);
+  out->println();
 }
 
 void cmd_get_leds(SerialCommands *sender)
@@ -1410,8 +1527,12 @@ void cmd_get_leds(SerialCommands *sender)
   // duty rather than a logical level keeps a breathing alarm observable from a
   // host, and digitalRead() is no longer meaningful here anyway: on a pin the
   // timer is driving it samples the live PWM waveform at an arbitrary phase.
-  sender->GetSerial()->printf("%d %d %d\r\n",
-                              led_duty[0], led_duty[1], led_duty[2]);
+  Print *out = sender->GetSerial();
+  out->print(led_duty[0]);
+  out->print(' ');
+  out->print(led_duty[1]);
+  out->print(' ');
+  out->println(led_duty[2]);
 }
 
 void cmd_get_bright(SerialCommands *sender)
@@ -1431,7 +1552,7 @@ void cmd_set_bright(SerialCommands *sender)
   int level = atoi(level_str);
   if (level < 1 || level > LED_LEVELS)
   {
-    sender->GetSerial()->printf("ERROR LEVEL OUT OF RANGE {%d}: %s", level, level_str);
+    print_range_error(sender->GetSerial(), "LEVEL", level, level_str);
     return;
   }
 

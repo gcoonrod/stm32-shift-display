@@ -64,7 +64,13 @@ set once in `setup()`.
 
 **Timekeeping.** `STM32RTC` on LSE with a seconds interrupt (`irq_rtc_seconds`) that copies the
 whole date/time into the global `DateTimeBuffer_t date_time_buf` (`firmware/include/header.h`) and
-sets `time_dirty`. The main loop redraws only when `time_dirty`. RTC values survive reset via VBAT
+sets `time_dirty`. Month is **1–12 everywhere**; converting to a `tm`-style 0–11 anywhere but at
+the conversion boundary is the bug that used to make the serial and menu paths disagree.
+
+**Don't reach for `<time.h>` or `Print::printf`.** `localtime`/`mktime` cost ~8.8 KB here — they
+drag in `tzset`, `sscanf` and the whole formatted-input engine — and `printf` costs ~3.6 KB. Use
+the `days_from_civil`/`civil_from_days` helpers and `print()` with the small `print2`/`print4hex`
+helpers instead. `-flto` is on. The main loop redraws only when `time_dirty`. RTC values survive reset via VBAT
 (CR2032), so `setup_rtc()` only reinitializes when it detects the epoch default.
 
 **State machine (`lib/ShiftDisplayFSM`).** Two-phase: `execute(action)` computes the next
