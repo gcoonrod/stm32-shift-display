@@ -44,8 +44,10 @@ and replayed by a peripheral, where nothing in the instruction stream shows the 
 - Per-*segment* brightness. The mechanism allows it; nothing asks for it yet.
 - Replacing `analogWrite` on `~OE`. TIM2 keeps the pin.
 - Changing what the display shows. Only how brightly individual digits show it.
-- Anything about the leading-zero blank, which already shipped in
-  `blank-leading-hour-zero` and is independent of this.
+- Dimming the leading hour digit in 12-hour mode. The proposal named this as the first
+  use; it has since been dropped. `blank-leading-hour-zero` shipped the blank, the blank
+  is the better result, and it is now a `clock-ui` requirement. This change leaves it
+  alone.
 
 ## Decisions
 
@@ -147,8 +149,10 @@ Buffer size is `N × 48 × 4` bytes.
 
 8 is the pick: 1536 B is 7.5% of RAM, taking the build from 4,920 to about 6,456 bytes
 (24% → 32%), and 500 Hz is well clear of flicker. 16 doubles the cost and drops the frame
-rate to where flicker starts being arguable at the edge of vision. The first use — dimming
-one hour digit — needs maybe three distinguishable levels.
+rate to where flicker starts being arguable at the edge of vision. 4 keeps the frame rate
+high and the cost low, and is the fallback if 1536 B turns out to be wanted elsewhere; it
+is not the default only because four levels is a thin range to demonstrate the mechanism
+with.
 
 Note this is a *linear* 8-step scale, not the gamma-mapped 8 the `~OE` levels use. Per-digit
 levels will bunch at the top perceptually. That is acceptable for relative dimming of one
@@ -225,19 +229,23 @@ interrupt, so this is noted for completeness rather than as a concern.
    DMA by eye.
 2. Start the engine with all digits at full brightness. The display should be
    indistinguishable from today.
-3. Introduce per-digit levels.
-4. Only then wire it to the hour digit.
+3. Introduce per-digit levels and exercise them from a test pattern.
 
-Rollback at any step is the build flag.
+Nothing in the clock's normal appearance changes at any step. Rollback is the build flag.
 
 ## Open Questions
 
 - **Does the Arduino core already claim TIM1?** Resolved by inspection before any code is
   written; TIM3 is the fallback and needs no other change.
-- **Is 8 slices enough to dim one digit attractively?** A level that reads as "dimmer" and
+- **Is 8 slices enough to dim a digit attractively?** A level that reads as "dimmer" and
   not as "failing" may want the gamma floor the `~OE` levels use. Answerable only by eye,
   after step 3.
 - **Should per-digit brightness persist?** The alarm and mode settings live in backup
-  registers. Whether a per-digit level is a user setting or a fixed property of the hour
-  digit is undecided, and deliberately left out of the specs until the feature exists to
+  registers. Whether a per-digit level is a user setting or a fixed property of a character
+  position is undecided, and deliberately left out of the specs until the feature exists to
   judge.
+
+- **What consumes this?** With the hour digit dropped, the engine has no named user-visible
+  feature behind it — its case rests on CPU-free refresh, an exactly specified bit clock,
+  and per-digit brightness as a capability. That is a legitimate case, but it should be made
+  knowingly rather than inherited from a use that no longer applies.

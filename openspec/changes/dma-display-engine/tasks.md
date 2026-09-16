@@ -60,5 +60,4 @@
 
 ## 8. Deferred, deliberately
 
-- [ ] 8.1 Decide whether the leading hour digit should be *dimmed* rather than blanked. The proposal named this as the first use, but `blank-leading-hour-zero` shipped the blank afterwards and it is now a requirement in `clock-ui` with confirmed behaviour behind it. Changing it is a separate proposal against that requirement, not a task here
-- [ ] 8.2 Decide whether per-digit levels should persist in backup registers, once there is something to judge by eye
+- [ ] 8.1 Decide whether per-digit levels should persist in backup registers, once there is something to judge by eye
